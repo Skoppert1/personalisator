@@ -37,9 +37,6 @@ const Index = () => {
             </div>
           </div>
         </div>
-        
-        {/* Add some space at the bottom for the communication panel */}
-        <div className="h-96 md:h-64"></div>
       </main>
       
       <CommunicationPanel />
