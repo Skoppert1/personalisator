@@ -3,23 +3,28 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageCircle, X, Send, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Sparkles, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 
 const CommunicationPanel: React.FC = () => {
   const [communicationStyle, setCommunicationStyle] = useState('formal');
   const [communicationChannel, setCommunicationChannel] = useState('email');
   const [isOpen, setIsOpen] = useState(false);
   const [quickMessage, setQuickMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const { toast } = useToast();
   
   const getMessageContent = () => {
     return quickMessage;
   };
 
   const sendMessage = async () => {
-    if (!quickMessage.trim()) return;
+    if (!quickMessage.trim() || isSending) return;
+
+    setIsSending(true);
 
     const messageData = {
       style: communicationStyle,
@@ -42,13 +47,26 @@ const CommunicationPanel: React.FC = () => {
       }
 
       setQuickMessage('');
+      toast({
+        title: "Bericht verstuurd",
+        description: `Je bericht is succesvol verstuurd via ${communicationChannel}.`,
+        duration: 3000,
+      });
     } catch (error) {
       console.error('Error sending message:', error);
+      toast({
+        title: "Fout bij versturen",
+        description: "Er is iets misgegaan bij het versturen van je bericht. Probeer het opnieuw.",
+        variant: "destructive",
+        duration: 4000,
+      });
+    } finally {
+      setIsSending(false);
     }
   };
 
   const handleInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isSending) {
       e.preventDefault();
       sendMessage();
     }
@@ -151,7 +169,7 @@ const CommunicationPanel: React.FC = () => {
               </div>
             </div>
             
-            {/* Message input with clean design */}
+            {/* Message input with clean design and loading state */}
             <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-4">
               <div className="flex items-end space-x-3">
                 <Input 
@@ -160,19 +178,30 @@ const CommunicationPanel: React.FC = () => {
                   onChange={(e) => setQuickMessage(e.target.value)}
                   onKeyPress={handleInputKeyPress}
                   className="border-0 bg-transparent focus:ring-0 focus:ring-offset-0 text-sm"
+                  disabled={isSending}
                 />
                 <Button 
                   size="sm" 
                   className="bg-syntilio-purple hover:bg-syntilio-purple/90 text-white rounded-xl px-4 h-9 min-w-[80px]"
                   onClick={sendMessage}
-                  disabled={!quickMessage.trim()}
+                  disabled={!quickMessage.trim() || isSending}
                 >
-                  <Send className="h-4 w-4 mr-1" />
-                  Send
+                  {isSending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      Bezig...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-1" />
+                      Send
+                    </>
+                  )}
                 </Button>
               </div>
               <div className="mt-2 text-xs text-gray-400">
                 Via {communicationChannel}
+                {isSending && <span className="ml-2 text-syntilio-purple">• Wordt verstuurd...</span>}
               </div>
             </div>
           </div>
