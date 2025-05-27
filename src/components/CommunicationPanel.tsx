@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageCircle, X } from 'lucide-react';
+import { MessageCircle, X, Send, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -40,11 +41,9 @@ const CommunicationPanel: React.FC = () => {
         throw new Error('Failed to send message');
       }
 
-      // Reset form or show success message
       setQuickMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
-      // Handle error (show error message to user)
     }
   };
 
@@ -57,70 +56,73 @@ const CommunicationPanel: React.FC = () => {
   
   return (
     <>
-      {/* Floating chat button */}
+      {/* Floating chat button - minimalist design */}
       <div 
         className={cn(
-          "fixed bottom-6 right-6 z-50 transition-all duration-300",
-          isOpen && "opacity-0 pointer-events-none"
+          "fixed bottom-8 right-8 z-50 transition-all duration-500 ease-in-out",
+          isOpen && "opacity-0 pointer-events-none scale-0"
         )}
       >
-        <Button
-          onClick={() => setIsOpen(true)}
-          className="relative bg-syntilio-purple hover:bg-syntilio-purple/90 text-white rounded-full p-4 shadow-lg flex items-center justify-center group h-16 w-16"
-        >
-          <MessageCircle className="h-8 w-8" />
-          <span className="absolute -top-2 -right-2">
-            <Badge variant="destructive">Nieuw</Badge>
-          </span>
-          <span className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap right-full mr-3 bg-black text-white px-2 py-1 rounded text-xs pointer-events-none">
-            Personalisator
-          </span>
-        </Button>
-      </div>
-
-      {/* Communication panel */}
-      <div className={cn(
-        "fixed bottom-0 right-0 w-full md:w-1/3 border-t border-l bg-white shadow-lg z-50 transition-all duration-300 transform",
-        isOpen ? "translate-y-0" : "translate-y-full"
-      )}>
-        <div className="flex justify-between items-center p-3 border-b bg-gray-100">
-          <div className="flex space-x-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-gray-200">
-              <span>📹</span>
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-gray-200">
-              <span>⏸️</span>
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-gray-200">
-              <span>⏪</span>
-            </Button>
-          </div>
-          <div className="text-sm font-medium">3:49</div>
-          <div className="flex space-x-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-gray-200">
-              <span>🔄</span>
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 rounded-full bg-gray-200 hover:bg-red-100"
-              onClick={() => setIsOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+        <div className="relative">
+          <Button
+            onClick={() => setIsOpen(true)}
+            className="relative bg-white/90 backdrop-blur-sm border border-gray-200/50 hover:bg-white hover:shadow-lg text-syntilio-purple rounded-full p-4 shadow-md transition-all duration-300 hover:scale-105 group h-14 w-14"
+          >
+            <MessageCircle className="h-6 w-6" />
+            <span className="absolute -top-1 -right-1">
+              <Badge variant="destructive" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                !
+              </Badge>
+            </span>
+          </Button>
+          
+          {/* Floating tooltip */}
+          <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap">
+              Personalisator
+              <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Communication panel - modern minimal design */}
+      <div className={cn(
+        "fixed bottom-0 right-0 w-full md:w-[400px] bg-white/95 backdrop-blur-lg border-l border-t border-gray-200/50 shadow-2xl z-50 transition-all duration-500 ease-in-out transform rounded-tl-3xl overflow-hidden",
+        isOpen ? "translate-y-0" : "translate-y-full"
+      )}>
+        {/* Header with minimal controls */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-100">
+          <div className="flex items-center space-x-3">
+            <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-sm font-medium text-gray-600">Live sessie</span>
+            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">3:49</span>
+          </div>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+            onClick={() => setIsOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
         
-        <div className="p-4">
-          <div className="mb-4">
-            <h3 className="text-md font-semibold mb-2">Personalisator</h3>
-            <p className="text-sm text-gray-600 mb-4">Pas automatisch de communicatiestijl en het kanaal aan per ontvanger</p>
+        <div className="p-6 space-y-6">
+          {/* Personalization section */}
+          <div>
+            <div className="flex items-center space-x-2 mb-3">
+              <Sparkles className="h-5 w-5 text-syntilio-purple" />
+              <h3 className="text-lg font-semibold text-gray-900">Personalisator</h3>
+            </div>
+            <p className="text-sm text-gray-500 mb-6">Automatische aanpassing van communicatie per ontvanger</p>
             
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 gap-4 mb-6">
               <div>
-                <label className="text-sm text-gray-500 block mb-1">Communicatiestijl</label>
+                <label className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2 block">Stijl</label>
                 <Select value={communicationStyle} onValueChange={setCommunicationStyle}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-200 focus:border-syntilio-purple focus:ring-syntilio-purple/20">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -133,9 +135,9 @@ const CommunicationPanel: React.FC = () => {
               </div>
               
               <div>
-                <label className="text-sm text-gray-500 block mb-1">Communicatiekanaal</label>
+                <label className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2 block">Kanaal</label>
                 <Select value={communicationChannel} onValueChange={setCommunicationChannel}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-200 focus:border-syntilio-purple focus:ring-syntilio-purple/20">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -149,44 +151,38 @@ const CommunicationPanel: React.FC = () => {
               </div>
             </div>
             
-            <Tabs defaultValue="preview">
-              <TabsList className="w-full">
-                <TabsTrigger value="preview" className="flex-1 data-[state=active]:bg-syntilio-purple data-[state=active]:text-white">Bericht</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="preview" className="bg-gray-50 p-4 rounded border mt-2">
-                <div className="text-sm">
-                  <Input 
-                    placeholder="Typ hier je snelle bericht..."
-                    value={quickMessage}
-                    onChange={(e) => setQuickMessage(e.target.value)}
-                    onKeyPress={handleInputKeyPress}
-                    className="mb-3"
-                  />
-                </div>
-                
-                <div className="mt-3 text-sm text-gray-500">
-                  <div className="flex items-center justify-between">
-                    <span>Via: {communicationChannel}</span>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="text-syntilio-purple border-syntilio-purple"
-                      onClick={sendMessage}
-                    >
-                      Verzenden
-                    </Button>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+            {/* Message input with clean design */}
+            <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-4">
+              <div className="flex items-end space-x-3">
+                <Input 
+                  placeholder="Typ je bericht..."
+                  value={quickMessage}
+                  onChange={(e) => setQuickMessage(e.target.value)}
+                  onKeyPress={handleInputKeyPress}
+                  className="border-0 bg-transparent focus:ring-0 focus:ring-offset-0 text-sm"
+                />
+                <Button 
+                  size="sm" 
+                  className="bg-syntilio-purple hover:bg-syntilio-purple/90 text-white rounded-xl px-4 h-9 min-w-[80px]"
+                  onClick={sendMessage}
+                  disabled={!quickMessage.trim()}
+                >
+                  <Send className="h-4 w-4 mr-1" />
+                  Send
+                </Button>
+              </div>
+              <div className="mt-2 text-xs text-gray-400">
+                Via {communicationChannel}
+              </div>
+            </div>
           </div>
           
-          <div>
-            <h3 className="text-md font-semibold mb-2">Feedback agent</h3>
-            <p className="text-sm text-gray-600 mb-2">Vraag automatisch feedback aan de betrokkenen</p>
+          {/* Feedback section with minimal styling */}
+          <div className="border-t border-gray-100 pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Feedback agent</h3>
+            <p className="text-sm text-gray-500 mb-4">Automatische feedback verzameling</p>
             
-            <Button className="w-full bg-syntilio-purple hover:bg-syntilio-purple/90 text-white">
+            <Button className="w-full bg-gradient-to-r from-syntilio-purple to-syntilio-pink hover:opacity-90 text-white rounded-xl py-3 font-medium transition-all duration-300">
               Feedback verzoek versturen
             </Button>
           </div>
