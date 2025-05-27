@@ -65,7 +65,8 @@ const CommunicationPanel: React.FC = () => {
         )}
       >
         <Button
-          onClick={() => setIsOpen(true)}\n          className="relative bg-syntilio-purple hover:bg-syntilio-purple/90 text-white rounded-full p-4 shadow-lg flex items-center justify-center group h-16 w-16"
+          onClick={() => setIsOpen(true)}
+          className="relative bg-syntilio-purple hover:bg-syntilio-purple/90 text-white rounded-full p-4 shadow-lg flex items-center justify-center group h-16 w-16"
         >
           <MessageCircle className="h-8 w-8" />
           <span className="absolute -top-2 -right-2">
@@ -196,4 +197,3 @@ const CommunicationPanel: React.FC = () => {
 };
 
 export default CommunicationPanel;
-
