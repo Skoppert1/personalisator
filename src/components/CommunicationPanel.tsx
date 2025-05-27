@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -6,16 +7,19 @@ import { MessageCircle, X, Play, Pause, RotateCcw, Video, Send, Sparkles, Heart,
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+
 const CommunicationPanel = () => {
   const [communicationStyle, setCommunicationStyle] = useState('formal');
   const [communicationChannel, setCommunicationChannel] = useState('email');
   const [isOpen, setIsOpen] = useState(false);
+  
   const styleIcons = {
     formal: MessageSquare,
     warm: Heart,
     concise: MessageCircle,
     visual: Eye
   };
+
   const channelEmojis = {
     email: '📧',
     sms: '💬',
@@ -23,16 +27,29 @@ const CommunicationPanel = () => {
     portal: '🌐',
     voice: '🎙️'
   };
-  return <>
+  
+  return (
+    <>
       {/* Floating chat button with glow effect */}
-      <div className={cn("fixed bottom-6 right-6 z-50 transition-all duration-300", isOpen && "opacity-0 pointer-events-none")}>
+      <div 
+        className={cn(
+          "fixed bottom-6 right-6 z-50 transition-all duration-300",
+          isOpen && "opacity-0 pointer-events-none"
+        )}
+      >
         <div className="relative">
-          <Button onClick={() => setIsOpen(true)} className="relative bg-gradient-to-r from-syntilio-purple to-syntilio-pink hover:from-syntilio-purple/90 hover:to-syntilio-pink/90 text-white rounded-full p-5 shadow-2xl flex items-center justify-center group h-16 w-16 transition-all duration-300 hover:scale-110">
+          <Button
+            onClick={() => setIsOpen(true)}
+            className="relative bg-gradient-to-r from-syntilio-purple to-syntilio-pink hover:from-syntilio-purple/90 hover:to-syntilio-pink/90 text-white rounded-full p-5 shadow-2xl flex items-center justify-center group h-16 w-16 transition-all duration-300 hover:scale-110"
+          >
             <MessageCircle className="h-7 w-7" />
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-syntilio-purple to-syntilio-pink opacity-75 animate-pulse"></div>
           </Button>
           
-          <Badge variant="destructive" className="absolute -top-2 -right-2 animate-bounce bg-red-500 text-white border-2 border-white shadow-lg">
+          <Badge 
+            variant="destructive" 
+            className="absolute -top-2 -right-2 animate-bounce bg-red-500 text-white border-2 border-white shadow-lg"
+          >
             Nieuw
           </Badge>
           
@@ -49,9 +66,12 @@ const CommunicationPanel = () => {
       </div>
 
       {/* Modern communication panel */}
-      <div className={cn("fixed bottom-0 right-0 w-full md:w-96 border-l bg-white shadow-2xl z-50 transition-all duration-500 transform", isOpen ? "translate-y-0" : "translate-y-full")}>
+      <div className={cn(
+        "fixed bottom-0 right-0 w-full md:w-96 border-l bg-white shadow-2xl z-50 transition-all duration-500 transform",
+        isOpen ? "translate-y-0" : "translate-y-full"
+      )}>
         {/* Header with controls */}
-        <div className="flex justify-between items-center p-4 border-b bg-gradient-to-r from-gray-50 to-gray-100 rounded-full">
+        <div className="flex justify-between items-center p-4 border-b bg-gradient-to-r from-gray-50 to-gray-100">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white shadow-sm hover:bg-gray-50">
@@ -71,7 +91,12 @@ const CommunicationPanel = () => {
             <span className="text-sm font-medium text-gray-700">3:49</span>
           </div>
           
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-white shadow-sm hover:bg-red-50 hover:text-red-600" onClick={() => setIsOpen(false)}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-9 w-9 rounded-full bg-white shadow-sm hover:bg-red-50 hover:text-red-600"
+            onClick={() => setIsOpen(false)}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -136,10 +161,16 @@ const CommunicationPanel = () => {
             
             <Tabs defaultValue="preview" className="w-full">
               <TabsList className="w-full bg-gray-100">
-                <TabsTrigger value="preview" className="flex-1 data-[state=active]:bg-white data-[state=active]:text-syntilio-purple data-[state=active]:shadow-sm">
+                <TabsTrigger 
+                  value="preview" 
+                  className="flex-1 data-[state=active]:bg-white data-[state=active]:text-syntilio-purple data-[state=active]:shadow-sm"
+                >
                   👁️ Voorbeeld
                 </TabsTrigger>
-                <TabsTrigger value="edit" className="flex-1 data-[state=active]:bg-white data-[state=active]:text-syntilio-purple data-[state=active]:shadow-sm">
+                <TabsTrigger 
+                  value="edit" 
+                  className="flex-1 data-[state=active]:bg-white data-[state=active]:text-syntilio-purple data-[state=active]:shadow-sm"
+                >
                   ✏️ Bewerken
                 </TabsTrigger>
               </TabsList>
@@ -147,22 +178,29 @@ const CommunicationPanel = () => {
               <TabsContent value="preview" className="mt-4">
                 <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                   <div className="text-sm leading-relaxed text-gray-800">
-                    {communicationStyle === 'formal' && <div className="space-y-2">
+                    {communicationStyle === 'formal' && (
+                      <div className="space-y-2">
                         <p className="font-medium">Geachte heer/mevrouw,</p>
                         <p>Hierbij bevestigen wij de ontvangst van uw melding. Deze zal door onze zorgcentrale worden behandeld binnen de gestelde termijn.</p>
-                        <p>Met vriendelijke groet,<br />Zorgcentrale Team</p>
-                      </div>}
-                    {communicationStyle === 'warm' && <div className="space-y-2">
+                        <p>Met vriendelijke groet,<br/>Zorgcentrale Team</p>
+                      </div>
+                    )}
+                    {communicationStyle === 'warm' && (
+                      <div className="space-y-2">
                         <p>Hallo! 👋</p>
                         <p>Fijn dat je contact met ons hebt opgenomen. We hebben je melding goed ontvangen en gaan er meteen mee aan de slag. Je hoort snel van ons!</p>
-                        <p>Hartelijke groet,<br />Jouw Zorgteam 💙</p>
-                      </div>}
-                    {communicationStyle === 'concise' && <div className="space-y-1">
+                        <p>Hartelijke groet,<br/>Jouw Zorgteam 💙</p>
+                      </div>
+                    )}
+                    {communicationStyle === 'concise' && (
+                      <div className="space-y-1">
                         <p>✅ Melding ontvangen</p>
                         <p>⏰ Behandeltijd: 24 uur</p>
                         <p>📞 We nemen contact op bij vragen</p>
-                      </div>}
-                    {communicationStyle === 'visual' && <div className="space-y-3">
+                      </div>
+                    )}
+                    {communicationStyle === 'visual' && (
+                      <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <span className="text-2xl">📬</span>
                           <span className="font-medium">Melding ontvangen!</span>
@@ -179,7 +217,8 @@ const CommunicationPanel = () => {
                           <span className="text-2xl">👋</span>
                           <span>Groeten van het Zorgteam</span>
                         </div>
-                      </div>}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
@@ -187,7 +226,10 @@ const CommunicationPanel = () => {
                       <span>{channelEmojis[communicationChannel]}</span>
                       <span>Via: {communicationChannel}</span>
                     </div>
-                    <Button size="sm" className="bg-gradient-to-r from-syntilio-purple to-syntilio-pink hover:from-syntilio-purple/90 hover:to-syntilio-pink/90 text-white shadow-sm">
+                    <Button 
+                      size="sm" 
+                      className="bg-gradient-to-r from-syntilio-purple to-syntilio-pink hover:from-syntilio-purple/90 hover:to-syntilio-pink/90 text-white shadow-sm"
+                    >
                       <Send className="h-3 w-3 mr-1" />
                       Verzenden
                     </Button>
@@ -197,7 +239,10 @@ const CommunicationPanel = () => {
               
               <TabsContent value="edit" className="mt-4">
                 <div className="space-y-4">
-                  <Textarea className="min-h-[120px] border-gray-200 focus:border-syntilio-purple focus:ring-syntilio-purple" placeholder="Schrijf hier uw aangepaste bericht..." />
+                  <Textarea 
+                    className="min-h-[120px] border-gray-200 focus:border-syntilio-purple focus:ring-syntilio-purple" 
+                    placeholder="Schrijf hier uw aangepaste bericht..."
+                  />
                   <div className="flex justify-end">
                     <Button className="bg-gradient-to-r from-syntilio-purple to-syntilio-pink hover:from-syntilio-purple/90 hover:to-syntilio-pink/90 text-white shadow-sm">
                       💾 Opslaan
@@ -233,6 +278,8 @@ const CommunicationPanel = () => {
           </div>
         </div>
       </div>
-    </>;
+    </>
+  );
 };
+
 export default CommunicationPanel;
