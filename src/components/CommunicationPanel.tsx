@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -35,6 +36,19 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
     }
   }, [selectedContact]);
   
+  const getContactName = (contactId: string) => {
+    switch (contactId) {
+      case 'contact1':
+        return 'Jan de Jong';
+      case 'contact2':
+        return 'Anna de Vries';
+      case 'contact3':
+        return 'Berend van Dijk';
+      default:
+        return '';
+    }
+  };
+  
   const getMessageContent = () => {
     return quickMessage;
   };
@@ -48,6 +62,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
       style: communicationStyle,
       channel: communicationChannel,
       content: getMessageContent(),
+      clientName: getContactName(selectedContact || ''),
       timestamp: new Date().toISOString()
     };
 
@@ -90,6 +105,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
 
     const feedbackData = {
       type: 'feedback_request',
+      clientName: getContactName(selectedContact || ''),
       timestamp: new Date().toISOString(),
       communication_style: communicationStyle,
       communication_channel: communicationChannel
@@ -155,7 +171,6 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
             </span>
           </Button>
           
-          {/* Floating tooltip */}
           <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
             <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap">
               Personalisator
@@ -170,7 +185,6 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
         "fixed bottom-0 right-0 w-full md:w-[400px] bg-white/95 backdrop-blur-lg border-l border-t border-gray-200/50 shadow-2xl z-50 transition-all duration-500 ease-in-out transform rounded-tl-3xl overflow-hidden",
         isOpen ? "translate-y-0" : "translate-y-full"
       )}>
-        {/* Header with minimal controls */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100">
           <div className="flex items-center space-x-3">
             <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
