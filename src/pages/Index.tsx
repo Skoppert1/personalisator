@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import Header from '@/components/Header';
 import CaseHeader from '@/components/CaseHeader';
 import CaseDetails from '@/components/CaseDetails';
@@ -12,6 +12,12 @@ import TriageModel from '@/components/CaseDetails/TriageModel';
 import CommunicationPanel from '@/components/CommunicationPanel';
 
 const Index = () => {
+  const [selectedContact, setSelectedContact] = useState<string>('');
+
+  const handleContactSelect = (contactId: string) => {
+    setSelectedContact(contactId);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-syntilio-light">
       <Header />
@@ -25,7 +31,7 @@ const Index = () => {
           <div className="p-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-1">
-                <ClientSearch />
+                <ClientSearch onContactSelect={handleContactSelect} />
                 <MedicalNotes />
                 <Appointments />
               </div>
@@ -39,7 +45,7 @@ const Index = () => {
         </div>
       </main>
       
-      <CommunicationPanel />
+      <CommunicationPanel selectedContact={selectedContact} />
     </div>
   );
 };

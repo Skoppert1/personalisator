@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,7 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 
-const CommunicationPanel: React.FC = () => {
+interface CommunicationPanelProps {
+  selectedContact?: string;
+}
+
+const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact }) => {
   const [communicationStyle, setCommunicationStyle] = useState('informal');
   const [communicationChannel, setCommunicationChannel] = useState('telegram');
   const [isOpen, setIsOpen] = useState(false);
@@ -17,6 +20,17 @@ const CommunicationPanel: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
   const { toast } = useToast();
+  
+  // Update communication settings based on selected contact
+  useEffect(() => {
+    if (selectedContact === 'contact1') {
+      setCommunicationStyle('formal');
+      setCommunicationChannel('email');
+    } else if (selectedContact === 'contact2') {
+      setCommunicationStyle('informal');
+      setCommunicationChannel('telegram');
+    }
+  }, [selectedContact]);
   
   const getMessageContent = () => {
     return quickMessage;

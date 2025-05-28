@@ -4,7 +4,17 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
-const ClientSearch = () => {
+interface ClientSearchProps {
+  onContactSelect?: (contactId: string) => void;
+}
+
+const ClientSearch: React.FC<ClientSearchProps> = ({ onContactSelect }) => {
+  const handleContactSelection = (contactId: string) => {
+    if (onContactSelect) {
+      onContactSelect(contactId);
+    }
+  };
+
   return (
     <div className="border rounded-md p-4 mb-4">
       <div className="flex justify-between items-center mb-4">
@@ -25,7 +35,7 @@ const ClientSearch = () => {
             </div>
             <span className="font-medium">Cliënt</span>
           </div>
-          <Select>
+          <Select onValueChange={handleContactSelection}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Zoek contact" />
             </SelectTrigger>
@@ -43,7 +53,7 @@ const ClientSearch = () => {
             </div>
             <span className="font-medium">Beller</span>
           </div>
-          <Select>
+          <Select onValueChange={handleContactSelection}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Zoek contact" />
             </SelectTrigger>
