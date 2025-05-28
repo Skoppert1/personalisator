@@ -10,11 +10,12 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 
 const CommunicationPanel: React.FC = () => {
-  const [communicationStyle, setCommunicationStyle] = useState('formal');
-  const [communicationChannel, setCommunicationChannel] = useState('email');
+  const [communicationStyle, setCommunicationStyle] = useState('informal');
+  const [communicationChannel, setCommunicationChannel] = useState('telegram');
   const [isOpen, setIsOpen] = useState(false);
   const [quickMessage, setQuickMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isSendingFeedback, setIsSendingFeedback] = useState(false);
   const { toast } = useToast();
   
   const getMessageContent = () => {
@@ -62,6 +63,49 @@ const CommunicationPanel: React.FC = () => {
       });
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const sendFeedbackRequest = async () => {
+    if (isSendingFeedback) return;
+
+    setIsSendingFeedback(true);
+
+    const feedbackData = {
+      type: 'feedback_request',
+      timestamp: new Date().toISOString(),
+      communication_style: communicationStyle,
+      communication_channel: communicationChannel
+    };
+
+    try {
+      const response = await fetch('https://n8n.lamba.world/webhook-test/b679976e-ce87-4639-8440-7f7c242251a8', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedbackData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send feedback request');
+      }
+
+      toast({
+        title: "Feedback verzoek verstuurd",
+        description: "Het feedback verzoek is succesvol verstuurd.",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error sending feedback request:', error);
+      toast({
+        title: "Fout bij versturen",
+        description: "Er is iets misgegaan bij het versturen van het feedback verzoek. Probeer het opnieuw.",
+        variant: "destructive",
+        duration: 4000,
+      });
+    } finally {
+      setIsSendingFeedback(false);
     }
   };
 
@@ -148,6 +192,7 @@ const CommunicationPanel: React.FC = () => {
                     <SelectItem value="warm">Warm</SelectItem>
                     <SelectItem value="concise">Beknopt</SelectItem>
                     <SelectItem value="visual">Visueel</SelectItem>
+                    <SelectItem value="informal">Informeel & Vriendelijk</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -164,6 +209,7 @@ const CommunicationPanel: React.FC = () => {
                     <SelectItem value="app">App</SelectItem>
                     <SelectItem value="portal">Portaal</SelectItem>
                     <SelectItem value="voice">Spraak</SelectItem>
+                    <SelectItem value="telegram">Telegram</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -211,8 +257,19 @@ const CommunicationPanel: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Feedback agent</h3>
             <p className="text-sm text-gray-500 mb-4">Automatische feedback verzameling</p>
             
-            <Button className="w-full bg-gradient-to-r from-syntilio-purple to-syntilio-pink hover:opacity-90 text-white rounded-xl py-3 font-medium transition-all duration-300">
-              Feedback verzoek versturen
+            <Button 
+              className="w-full bg-gradient-to-r from-syntilio-purple to-syntilio-pink hover:opacity-90 text-white rounded-xl py-3 font-medium transition-all duration-300 min-h-[48px]"
+              onClick={sendFeedbackRequest}
+              disabled={isSendingFeedback}
+            >
+              {isSendingFeedback ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Feedback wordt verstuurd...
+                </>
+              ) : (
+                'Feedback verzoek versturen'
+              )}
             </Button>
           </div>
         </div>
