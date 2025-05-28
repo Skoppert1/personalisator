@@ -40,8 +40,9 @@ const ClientSearch: React.FC<ClientSearchProps> = ({ onContactSelect }) => {
               <SelectValue placeholder="Zoek contact" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="contact1">Contact 1</SelectItem>
-              <SelectItem value="contact2">Contact 2</SelectItem>
+              <SelectItem value="contact1">Jan de Jong (Email)</SelectItem>
+              <SelectItem value="contact2">Anna de Vries (WhatsApp)</SelectItem>
+              <SelectItem value="contact3">Berend van Dijk (Telegram)</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -58,8 +59,9 @@ const ClientSearch: React.FC<ClientSearchProps> = ({ onContactSelect }) => {
               <SelectValue placeholder="Zoek contact" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="contact1">Contact 1</SelectItem>
-              <SelectItem value="contact2">Contact 2</SelectItem>
+              <SelectItem value="contact1">Jan de Jong (Email)</SelectItem>
+              <SelectItem value="contact2">Anna de Vries (WhatsApp)</SelectItem>
+              <SelectItem value="contact3">Berend van Dijk (Telegram)</SelectItem>
             </SelectContent>
           </Select>
         </div>

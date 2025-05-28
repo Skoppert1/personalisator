@@ -28,6 +28,9 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
       setCommunicationChannel('email');
     } else if (selectedContact === 'contact2') {
       setCommunicationStyle('informal');
+      setCommunicationChannel('app');
+    } else if (selectedContact === 'contact3') {
+      setCommunicationStyle('informal');
       setCommunicationChannel('telegram');
     }
   }, [selectedContact]);
