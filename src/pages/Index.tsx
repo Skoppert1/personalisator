@@ -16,9 +16,23 @@ const Index = () => {
   const [selectedContact, setSelectedContact] = useState<string>('');
   const [isInCall, setIsInCall] = useState(false);
   const [incomingCallContact, setIncomingCallContact] = useState<string>('');
+  const [communicationStyle, setCommunicationStyle] = useState('informal');
+  const [communicationChannel, setCommunicationChannel] = useState('telegram');
 
   const handleContactSelect = (contactId: string) => {
     setSelectedContact(contactId);
+    
+    // Auto-set communication preferences based on contact
+    if (contactId === 'contact1') {
+      setCommunicationStyle('formal');
+      setCommunicationChannel('email');
+    } else if (contactId === 'contact2') {
+      setCommunicationStyle('informal');
+      setCommunicationChannel('whatsapp');
+    } else if (contactId === 'contact3') {
+      setCommunicationStyle('informal');
+      setCommunicationChannel('telegram');
+    }
   };
 
   // Simulate incoming call - this would normally be triggered by your phone system
@@ -26,6 +40,18 @@ const Index = () => {
     setIncomingCallContact(contactId);
     setIsInCall(true);
     setSelectedContact(contactId);
+    
+    // Auto-set communication preferences for incoming call
+    if (contactId === 'contact1') {
+      setCommunicationStyle('formal');
+      setCommunicationChannel('email');
+    } else if (contactId === 'contact2') {
+      setCommunicationStyle('informal');
+      setCommunicationChannel('whatsapp');
+    } else if (contactId === 'contact3') {
+      setCommunicationStyle('informal');
+      setCommunicationChannel('telegram');
+    }
   };
 
   const endCall = () => {
@@ -67,7 +93,15 @@ const Index = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-1">
-                <ClientSearch onContactSelect={handleContactSelect} />
+                <ClientSearch 
+                  onContactSelect={handleContactSelect}
+                  selectedContact={selectedContact}
+                  isInCall={isInCall}
+                  communicationStyle={communicationStyle}
+                  communicationChannel={communicationChannel}
+                  onStyleChange={setCommunicationStyle}
+                  onChannelChange={setCommunicationChannel}
+                />
                 <MedicalNotes />
                 <Appointments />
               </div>
@@ -84,7 +118,8 @@ const Index = () => {
       <CommunicationPanel 
         selectedContact={selectedContact} 
         isInCall={isInCall}
-        preferredStyle={isInCall ? (incomingCallContact === 'contact1' ? 'formal' : 'informal') : undefined}
+        communicationStyle={communicationStyle}
+        communicationChannel={communicationChannel}
       />
     </div>
   );

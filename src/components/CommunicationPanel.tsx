@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageCircle, X, Send, Sparkles, Loader2, Phone, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -11,40 +10,21 @@ import { useToast } from '@/hooks/use-toast';
 interface CommunicationPanelProps {
   selectedContact?: string;
   isInCall?: boolean;
-  preferredStyle?: string;
+  communicationStyle?: string;
+  communicationChannel?: string;
 }
 
 const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ 
   selectedContact, 
   isInCall = false,
-  preferredStyle 
+  communicationStyle = 'informal',
+  communicationChannel = 'telegram'
 }) => {
-  const [communicationStyle, setCommunicationStyle] = useState('informal');
-  const [communicationChannel, setCommunicationChannel] = useState('telegram');
   const [isOpen, setIsOpen] = useState(false);
   const [quickMessage, setQuickMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
   const { toast } = useToast();
-  
-  // Update communication settings based on selected contact or preferred style
-  useEffect(() => {
-    if (preferredStyle) {
-      setCommunicationStyle(preferredStyle);
-      return;
-    }
-    
-    if (selectedContact === 'contact1') {
-      setCommunicationStyle('formal');
-      setCommunicationChannel('email');
-    } else if (selectedContact === 'contact2') {
-      setCommunicationStyle('informal');
-      setCommunicationChannel('whatsapp');
-    } else if (selectedContact === 'contact3') {
-      setCommunicationStyle('informal');
-      setCommunicationChannel('telegram');
-    }
-  }, [selectedContact, preferredStyle]);
   
   const getContactName = (contactId: string) => {
     switch (contactId) {
@@ -277,49 +257,13 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
         )}
         
         <div className="p-6 space-y-6">
-          {/* Personalization section */}
+          {/* Quick messaging section */}
           <div>
             <div className="flex items-center space-x-2 mb-3">
               <Sparkles className="h-5 w-5 text-syntilio-purple" />
-              <h3 className="text-lg font-semibold text-gray-900">Personalisator</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Snel Bericht</h3>
             </div>
-            <p className="text-sm text-gray-500 mb-6">Automatische aanpassing van communicatie per ontvanger</p>
-            
-            <div className="grid grid-cols-1 gap-4 mb-6">
-              <div>
-                <label className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2 block">Stijl</label>
-                <Select value={communicationStyle} onValueChange={setCommunicationStyle}>
-                  <SelectTrigger className="border-gray-200 focus:border-syntilio-purple focus:ring-syntilio-purple/20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="formal">Formeel</SelectItem>
-                    <SelectItem value="warm">Warm</SelectItem>
-                    <SelectItem value="concise">Beknopt</SelectItem>
-                    <SelectItem value="visual">Visueel</SelectItem>
-                    <SelectItem value="informal">Informeel & Vriendelijk</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2 block">Kanaal</label>
-                <Select value={communicationChannel} onValueChange={setCommunicationChannel}>
-                  <SelectTrigger className="border-gray-200 focus:border-syntilio-purple focus:ring-syntilio-purple/20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="email">E-mail</SelectItem>
-                    <SelectItem value="sms">SMS</SelectItem>
-                    <SelectItem value="app">App</SelectItem>
-                    <SelectItem value="portal">Portaal</SelectItem>
-                    <SelectItem value="voice">Spraak</SelectItem>
-                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                    <SelectItem value="telegram">Telegram</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <p className="text-sm text-gray-500 mb-6">Verstuur berichten met automatische personalisatie</p>
             
             {/* Message input with clean design and loading state */}
             <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-4">
