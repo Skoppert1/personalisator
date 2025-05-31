@@ -140,26 +140,16 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   const sendMessage = async () => {
     if (!quickMessage.trim() || isSending) return;
 
-    let recipientList: { id: string; name: string }[] = [];
-    
+    let recipients = '';
     if (contactType === 'client') {
-      const clientName = getContactName(selectedContact || '');
-      if (clientName) {
-        recipientList = [{ id: selectedContact || '', name: clientName }];
-      }
+      recipients = getContactName(selectedContact || '');
     } else if (contactType === 'informal-care') {
-      recipientList = selectedInformalCare.map(id => ({
-        id,
-        name: informalCareContacts.find(contact => contact.id === id)?.name || ''
-      })).filter(contact => contact.name);
+      recipients = getSelectedContactNames();
     } else if (contactType === 'formal-care') {
-      const formalContact = formalCareContacts.find(contact => contact.id === selectedFormalCare);
-      if (formalContact) {
-        recipientList = [{ id: selectedFormalCare, name: formalContact.name }];
-      }
+      recipients = getSelectedContactNames();
     }
 
-    if (recipientList.length === 0) {
+    if (!recipients && contactType !== 'client') {
       toast({
         title: "Geen contacten geselecteerd",
         description: "Selecteer eerst contacten voordat je een bericht verstuurt.",
@@ -171,55 +161,35 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
 
     setIsSending(true);
 
+    const messageData = {
+      style: communicationStyle,
+      channel: communicationChannel,
+      content: getMessageContent(),
+      clientName: getContactName(selectedContact || ''),
+      contactType: contactType,
+      recipients: recipients,
+      timestamp: new Date().toISOString()
+    };
+
     try {
-      // Send separate message for each recipient
-      const sendPromises = recipientList.map(async (recipient) => {
-        const messageData = {
-          style: communicationStyle,
-          channel: communicationChannel,
-          content: getMessageContent(),
-          clientName: getContactName(selectedContact || ''),
-          contactType: contactType,
-          recipient: {
-            id: recipient.id,
-            name: recipient.name
-          },
-          timestamp: new Date().toISOString()
-        };
-
-        const response = await fetch('https://n8n.lamba.world/webhook-test/ca126202-cc73-4eb5-987d-d4680317f37e', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(messageData),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to send message to ${recipient.name}`);
-        }
-
-        return { success: true, recipient: recipient.name };
+      const response = await fetch('https://n8n.lamba.world/webhook-test/ca126202-cc73-4eb5-987d-d4680317f37e', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messageData),
       });
 
-      const results = await Promise.allSettled(sendPromises);
-      
-      const successful = results.filter(result => result.status === 'fulfilled').length;
-      const failed = results.filter(result => result.status === 'rejected').length;
-
-      if (successful > 0) {
-        setQuickMessage('');
-        toast({
-          title: "Berichten verstuurd",
-          description: `${successful} bericht${successful > 1 ? 'en' : ''} succesvol verstuurd${failed > 0 ? `, ${failed} mislukt` : ''}.`,
-          duration: 3000,
-        });
+      if (!response.ok) {
+        throw new Error('Failed to send message');
       }
 
-      if (failed > 0 && successful === 0) {
-        throw new Error('Alle berichten konden niet worden verstuurd');
-      }
-
+      setQuickMessage('');
+      toast({
+        title: "Bericht verstuurd",
+        description: `Je bericht is succesvol verstuurd naar ${getContactTypeDisplayName(contactType)}.`,
+        duration: 3000,
+      });
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -238,73 +208,34 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
 
     setIsSendingFeedback(true);
 
-    let recipientList: { id: string; name: string }[] = [];
-    
-    if (contactType === 'client') {
-      const clientName = getContactName(selectedContact || '');
-      if (clientName) {
-        recipientList = [{ id: selectedContact || '', name: clientName }];
-      }
-    } else if (contactType === 'informal-care') {
-      recipientList = selectedInformalCare.map(id => ({
-        id,
-        name: informalCareContacts.find(contact => contact.id === id)?.name || ''
-      })).filter(contact => contact.name);
-    } else if (contactType === 'formal-care') {
-      const formalContact = formalCareContacts.find(contact => contact.id === selectedFormalCare);
-      if (formalContact) {
-        recipientList = [{ id: selectedFormalCare, name: formalContact.name }];
-      }
-    }
+    const feedbackData = {
+      type: 'feedback_request',
+      clientName: getContactName(selectedContact || ''),
+      contactType: contactType,
+      recipients: getSelectedContactNames(),
+      timestamp: new Date().toISOString(),
+      communication_style: communicationStyle,
+      communication_channel: communicationChannel
+    };
 
     try {
-      // Send separate feedback request for each recipient
-      const sendPromises = recipientList.map(async (recipient) => {
-        const feedbackData = {
-          type: 'feedback_request',
-          clientName: getContactName(selectedContact || ''),
-          contactType: contactType,
-          recipient: {
-            id: recipient.id,
-            name: recipient.name
-          },
-          timestamp: new Date().toISOString(),
-          communication_style: communicationStyle,
-          communication_channel: communicationChannel
-        };
-
-        const response = await fetch('https://n8n.lamba.world/webhook-test/b679976e-ce87-4639-8440-7f7c242251a8', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(feedbackData),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to send feedback request to ${recipient.name}`);
-        }
-
-        return { success: true, recipient: recipient.name };
+      const response = await fetch('https://n8n.lamba.world/webhook-test/b679976e-ce87-4639-8440-7f7c242251a8', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedbackData),
       });
 
-      const results = await Promise.allSettled(sendPromises);
-      
-      const successful = results.filter(result => result.status === 'fulfilled').length;
-      const failed = results.filter(result => result.status === 'rejected').length;
-
-      if (successful > 0) {
-        toast({
-          title: "Feedback verzoeken verstuurd",
-          description: `${successful} feedback verzoek${successful > 1 ? 'en' : ''} succesvol verstuurd${failed > 0 ? `, ${failed} mislukt` : ''}.`,
-          duration: 3000,
-        });
+      if (!response.ok) {
+        throw new Error('Failed to send feedback request');
       }
 
-      if (failed > 0 && successful === 0) {
-        throw new Error('Alle feedback verzoeken konden niet worden verstuurd');
-      }
-
+      toast({
+        title: "Feedback verzoek verstuurd",
+        description: "Het feedback verzoek is succesvol verstuurd.",
+        duration: 3000,
+      });
     } catch (error) {
       console.error('Error sending feedback request:', error);
       toast({
