@@ -1,11 +1,15 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, X, Send, Sparkles, Loader2, Phone, User } from 'lucide-react';
+import { MessageCircle, X, Send, Sparkles, Loader2, Phone, User, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface CommunicationPanelProps {
   selectedContact?: string;
@@ -24,7 +28,25 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   const [quickMessage, setQuickMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
+  const [contactType, setContactType] = useState<'client' | 'informal-care' | 'formal-care'>('client');
+  const [selectedInformalCare, setSelectedInformalCare] = useState<string[]>([]);
+  const [selectedFormalCare, setSelectedFormalCare] = useState<string>('');
+  const [formalCareOpen, setFormalCareOpen] = useState(false);
   const { toast } = useToast();
+
+  const informalCareContacts = [
+    { id: 'informal1', name: 'Contact 1 - Partner' },
+    { id: 'informal2', name: 'Contact 2 - Zus' },
+    { id: 'informal3', name: 'Contact 3 - Buurman' },
+    { id: 'informal4', name: 'Contact 4 - Vriend' },
+  ];
+
+  const formalCareContacts = [
+    { id: 'formal1', name: 'Contact 1 - Huisarts' },
+    { id: 'formal2', name: 'Contact 2 - Fysiotherapeut' },
+    { id: 'formal3', name: 'Contact 3 - Wijkverpleegkundige' },
+    { id: 'formal4', name: 'Contact 4 - Specialist' },
+  ];
   
   const getContactName = (contactId: string) => {
     switch (contactId) {
@@ -76,13 +98,66 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
         return channel;
     }
   };
+
+  const getContactTypeDisplayName = (type: 'client' | 'informal-care' | 'formal-care') => {
+    switch (type) {
+      case 'client':
+        return 'Cliënt';
+      case 'informal-care':
+        return 'Informele zorg';
+      case 'formal-care':
+        return 'Formele zorg';
+      default:
+        return type;
+    }
+  };
+
+  const getSelectedContactNames = () => {
+    if (contactType === 'client') {
+      return getContactName(selectedContact || '');
+    } else if (contactType === 'informal-care') {
+      return selectedInformalCare.map(id => 
+        informalCareContacts.find(contact => contact.id === id)?.name || ''
+      ).filter(Boolean).join(', ');
+    } else if (contactType === 'formal-care') {
+      return formalCareContacts.find(contact => contact.id === selectedFormalCare)?.name || '';
+    }
+    return '';
+  };
   
   const getMessageContent = () => {
     return quickMessage;
   };
 
+  const handleInformalCareChange = (contactId: string, checked: boolean) => {
+    setSelectedInformalCare(prev => 
+      checked 
+        ? [...prev, contactId]
+        : prev.filter(id => id !== contactId)
+    );
+  };
+
   const sendMessage = async () => {
     if (!quickMessage.trim() || isSending) return;
+
+    let recipients = '';
+    if (contactType === 'client') {
+      recipients = getContactName(selectedContact || '');
+    } else if (contactType === 'informal-care') {
+      recipients = getSelectedContactNames();
+    } else if (contactType === 'formal-care') {
+      recipients = getSelectedContactNames();
+    }
+
+    if (!recipients && contactType !== 'client') {
+      toast({
+        title: "Geen contacten geselecteerd",
+        description: "Selecteer eerst contacten voordat je een bericht verstuurt.",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return;
+    }
 
     setIsSending(true);
 
@@ -91,6 +166,8 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
       channel: communicationChannel,
       content: getMessageContent(),
       clientName: getContactName(selectedContact || ''),
+      contactType: contactType,
+      recipients: recipients,
       timestamp: new Date().toISOString()
     };
 
@@ -110,7 +187,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
       setQuickMessage('');
       toast({
         title: "Bericht verstuurd",
-        description: `Je bericht is succesvol verstuurd via ${communicationChannel}.`,
+        description: `Je bericht is succesvol verstuurd naar ${getContactTypeDisplayName(contactType)}.`,
         duration: 3000,
       });
     } catch (error) {
@@ -134,6 +211,8 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
     const feedbackData = {
       type: 'feedback_request',
       clientName: getContactName(selectedContact || ''),
+      contactType: contactType,
+      recipients: getSelectedContactNames(),
       timestamp: new Date().toISOString(),
       communication_style: communicationStyle,
       communication_channel: communicationChannel
@@ -210,7 +289,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
 
       {/* Communication panel */}
       <div className={cn(
-        "fixed bottom-0 right-0 w-full md:w-[400px] bg-white/95 backdrop-blur-lg border-l border-t border-gray-200/50 shadow-2xl z-50 transition-all duration-500 ease-in-out transform rounded-tl-3xl overflow-hidden",
+        "fixed bottom-0 right-0 w-full md:w-[500px] bg-white/95 backdrop-blur-lg border-l border-t border-gray-200/50 shadow-2xl z-50 transition-all duration-500 ease-in-out transform rounded-tl-3xl overflow-hidden",
         isOpen ? "translate-y-0" : "translate-y-full"
       )}>
         <div className="flex justify-between items-center p-6 border-b border-gray-100">
@@ -257,13 +336,112 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
         )}
         
         <div className="p-6 space-y-6">
+          <Tabs defaultValue="client" value={contactType} onValueChange={(value) => setContactType(value as 'client' | 'informal-care' | 'formal-care')}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="client">Cliënt</TabsTrigger>
+              <TabsTrigger value="informal-care">Informele zorg</TabsTrigger>
+              <TabsTrigger value="formal-care">Formele zorg</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="client" className="space-y-4">
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-600">Berichten worden verstuurd naar de geselecteerde cliënt</p>
+                {selectedContact && (
+                  <div className="mt-2 text-sm font-medium text-gray-800">
+                    {getContactName(selectedContact)}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="informal-care" className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium mb-3">Selecteer informele zorgcontacten</h4>
+                <div className="space-y-2">
+                  {informalCareContacts.map((contact) => (
+                    <div key={contact.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={contact.id}
+                        checked={selectedInformalCare.includes(contact.id)}
+                        onCheckedChange={(checked) => handleInformalCareChange(contact.id, checked as boolean)}
+                      />
+                      <label htmlFor={contact.id} className="text-sm text-gray-700 cursor-pointer">
+                        {contact.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                {selectedInformalCare.length > 0 && (
+                  <div className="mt-3 p-2 bg-green-50 rounded text-xs text-green-800">
+                    {selectedInformalCare.length} contact{selectedInformalCare.length > 1 ? 'en' : ''} geselecteerd
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="formal-care" className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium mb-3">Zoek formele zorgcontact</h4>
+                <Popover open={formalCareOpen} onOpenChange={setFormalCareOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={formalCareOpen}
+                      className="w-full justify-between"
+                    >
+                      {selectedFormalCare
+                        ? formalCareContacts.find(contact => contact.id === selectedFormalCare)?.name
+                        : "Selecteer formele zorg contact..."}
+                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Zoek contact..." />
+                      <CommandList>
+                        <CommandEmpty>Geen contact gevonden.</CommandEmpty>
+                        <CommandGroup>
+                          {formalCareContacts.map((contact) => (
+                            <CommandItem
+                              key={contact.id}
+                              value={contact.name}
+                              onSelect={() => {
+                                setSelectedFormalCare(contact.id === selectedFormalCare ? '' : contact.id);
+                                setFormalCareOpen(false);
+                              }}
+                            >
+                              {contact.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {selectedFormalCare && (
+                  <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-800">
+                    {formalCareContacts.find(contact => contact.id === selectedFormalCare)?.name} geselecteerd
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+
           {/* Quick messaging section */}
           <div>
             <div className="flex items-center space-x-2 mb-3">
               <Sparkles className="h-5 w-5 text-syntilio-purple" />
               <h3 className="text-lg font-semibold text-gray-900">Snel Bericht</h3>
             </div>
-            <p className="text-sm text-gray-500 mb-6">Verstuur berichten met automatische personalisatie</p>
+            <p className="text-sm text-gray-500 mb-6">
+              Verstuur naar: {getContactTypeDisplayName(contactType)}
+              {getSelectedContactNames() && (
+                <span className="block font-medium text-gray-700 mt-1">
+                  {getSelectedContactNames()}
+                </span>
+              )}
+            </p>
             
             {/* Message input with clean design and loading state */}
             <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-4">
