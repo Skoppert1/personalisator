@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageCircle, X, Send, Sparkles, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Sparkles, Loader2, Phone, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -11,9 +10,15 @@ import { useToast } from '@/hooks/use-toast';
 
 interface CommunicationPanelProps {
   selectedContact?: string;
+  isInCall?: boolean;
+  preferredStyle?: string;
 }
 
-const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact }) => {
+const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ 
+  selectedContact, 
+  isInCall = false,
+  preferredStyle 
+}) => {
   const [communicationStyle, setCommunicationStyle] = useState('informal');
   const [communicationChannel, setCommunicationChannel] = useState('telegram');
   const [isOpen, setIsOpen] = useState(false);
@@ -22,19 +27,24 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
   const { toast } = useToast();
   
-  // Update communication settings based on selected contact
+  // Update communication settings based on selected contact or preferred style
   useEffect(() => {
+    if (preferredStyle) {
+      setCommunicationStyle(preferredStyle);
+      return;
+    }
+    
     if (selectedContact === 'contact1') {
       setCommunicationStyle('formal');
       setCommunicationChannel('email');
     } else if (selectedContact === 'contact2') {
       setCommunicationStyle('informal');
-      setCommunicationChannel('app');
+      setCommunicationChannel('whatsapp');
     } else if (selectedContact === 'contact3') {
       setCommunicationStyle('informal');
       setCommunicationChannel('telegram');
     }
-  }, [selectedContact]);
+  }, [selectedContact, preferredStyle]);
   
   const getContactName = (contactId: string) => {
     switch (contactId) {
@@ -46,6 +56,44 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
         return 'Berend van Dijk';
       default:
         return '';
+    }
+  };
+
+  const getStyleDisplayName = (style: string) => {
+    switch (style) {
+      case 'formal':
+        return 'Formeel';
+      case 'warm':
+        return 'Warm';
+      case 'concise':
+        return 'Beknopt';
+      case 'visual':
+        return 'Visueel';
+      case 'informal':
+        return 'Informeel & Vriendelijk';
+      default:
+        return style;
+    }
+  };
+
+  const getChannelDisplayName = (channel: string) => {
+    switch (channel) {
+      case 'email':
+        return 'E-mail';
+      case 'whatsapp':
+        return 'WhatsApp';
+      case 'telegram':
+        return 'Telegram';
+      case 'sms':
+        return 'SMS';
+      case 'app':
+        return 'App';
+      case 'portal':
+        return 'Portaal';
+      case 'voice':
+        return 'Spraak';
+      default:
+        return channel;
     }
   };
   
@@ -151,7 +199,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
   
   return (
     <>
-      {/* Floating chat button - minimalist design */}
+      {/* Floating chat button */}
       <div 
         className={cn(
           "fixed bottom-8 right-8 z-50 transition-all duration-500 ease-in-out",
@@ -180,7 +228,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
         </div>
       </div>
 
-      {/* Communication panel - modern minimal design */}
+      {/* Communication panel */}
       <div className={cn(
         "fixed bottom-0 right-0 w-full md:w-[400px] bg-white/95 backdrop-blur-lg border-l border-t border-gray-200/50 shadow-2xl z-50 transition-all duration-500 ease-in-out transform rounded-tl-3xl overflow-hidden",
         isOpen ? "translate-y-0" : "translate-y-full"
@@ -201,6 +249,32 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
             <X className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Client Communication Preference Display */}
+        {(selectedContact || isInCall) && (
+          <div className="bg-blue-50 border-b border-blue-100 p-4">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                {isInCall ? (
+                  <Phone className="h-4 w-4 text-blue-600" />
+                ) : (
+                  <User className="h-4 w-4 text-blue-600" />
+                )}
+                <span className="text-sm font-medium text-blue-900">
+                  {isInCall ? 'Inkomend gesprek' : 'Geselecteerde cliënt'}
+                </span>
+              </div>
+            </div>
+            <div className="mt-2">
+              <div className="text-sm text-blue-800 font-medium">
+                {getContactName(selectedContact || '')}
+              </div>
+              <div className="text-xs text-blue-600 mt-1">
+                <span className="font-medium">Voorkeur:</span> {getStyleDisplayName(communicationStyle)} • {getChannelDisplayName(communicationChannel)}
+              </div>
+            </div>
+          </div>
+        )}
         
         <div className="p-6 space-y-6">
           {/* Personalization section */}
@@ -240,6 +314,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
                     <SelectItem value="app">App</SelectItem>
                     <SelectItem value="portal">Portaal</SelectItem>
                     <SelectItem value="voice">Spraak</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
                     <SelectItem value="telegram">Telegram</SelectItem>
                   </SelectContent>
                 </Select>
@@ -277,13 +352,13 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({ selectedContact
                 </Button>
               </div>
               <div className="mt-2 text-xs text-gray-400">
-                Via {communicationChannel}
+                Via {getChannelDisplayName(communicationChannel)}
                 {isSending && <span className="ml-2 text-syntilio-purple">• Wordt verstuurd...</span>}
               </div>
             </div>
           </div>
           
-          {/* Feedback section with minimal styling */}
+          {/* Feedback section */}
           <div className="border-t border-gray-100 pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Feedback agent</h3>
             <p className="text-sm text-gray-500 mb-4">Automatische feedback verzameling</p>
