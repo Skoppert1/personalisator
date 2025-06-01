@@ -518,18 +518,6 @@ Praktisch: ${formalCareForm.practical}`;
             {/* Conditional rendering based on contact type */}
             {contactType === 'formal-care' ? (
               <div className="space-y-4">
-                {/* Custom message field for formal care */}
-                <div>
-                  <Label htmlFor="customMessage" className="text-sm font-medium">Eigen bericht (optioneel)</Label>
-                  <Textarea
-                    id="customMessage"
-                    placeholder="Voeg hier een persoonlijk bericht toe..."
-                    value={formalCareForm.customMessage}
-                    onChange={(e) => handleFormalCareFormChange('customMessage', e.target.value)}
-                    className="mt-1 min-h-[60px]"
-                  />
-                </div>
-
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="client" className="text-sm font-medium">Cliënt</Label>
@@ -621,6 +609,17 @@ Praktisch: ${formalCareForm.practical}`;
                       Voorbeeld: Bezoek tussen 14:00-15:00, parkeren mogelijk voor de deur
                     </div>
                   </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="customMessage" className="text-sm font-medium">Eigen bericht (optioneel)</Label>
+                  <Textarea
+                    id="customMessage"
+                    placeholder="Voeg hier een persoonlijk bericht toe..."
+                    value={formalCareForm.customMessage}
+                    onChange={(e) => handleFormalCareFormChange('customMessage', e.target.value)}
+                    className="mt-1 min-h-[60px]"
+                  />
                 </div>
                 
                 <Button 
