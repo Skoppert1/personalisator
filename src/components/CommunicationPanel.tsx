@@ -42,7 +42,8 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
     instructions: '',
     socialFactors: '',
     followUp: '',
-    practical: ''
+    practical: '',
+    customMessage: ''
   });
   
   const { toast } = useToast();
@@ -140,13 +141,18 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   
   const getMessageContent = () => {
     if (contactType === 'formal-care') {
-      return `Cliënt: ${formalCareForm.client}
+      const structuredMessage = `Cliënt: ${formalCareForm.client}
 Reden: ${formalCareForm.reason}
 Medische voorgeschiedenis: ${formalCareForm.medicalHistory}
 Instructies: ${formalCareForm.instructions}
 Sociale factoren: ${formalCareForm.socialFactors}
 Follow-up: ${formalCareForm.followUp}
 Praktisch: ${formalCareForm.practical}`;
+
+      if (formalCareForm.customMessage.trim()) {
+        return formalCareForm.customMessage + '\n\n' + structuredMessage;
+      }
+      return structuredMessage;
     }
     return quickMessage;
   };
@@ -167,13 +173,24 @@ Praktisch: ${formalCareForm.practical}`;
     const messageContent = getMessageContent();
     if ((!messageContent.trim() && contactType !== 'formal-care') || isSending) return;
 
-    // Check if formal care form is filled
+    // Check formal care form validation
     if (contactType === 'formal-care') {
-      const requiredFields = Object.values(formalCareForm);
-      if (requiredFields.some(field => !field.trim())) {
+      const hasCustomMessage = formalCareForm.customMessage.trim();
+      const structuredFields = [
+        formalCareForm.client,
+        formalCareForm.reason,
+        formalCareForm.medicalHistory,
+        formalCareForm.instructions,
+        formalCareForm.socialFactors,
+        formalCareForm.followUp,
+        formalCareForm.practical
+      ];
+      const hasAllStructuredFields = structuredFields.every(field => field.trim());
+
+      if (!hasCustomMessage && !hasAllStructuredFields) {
         toast({
           title: "Formulier incompleet",
-          description: "Vul alle velden in voor formele zorg berichten.",
+          description: "Vul ofwel een bericht in, ofwel alle gestructureerde velden, of beide.",
           variant: "destructive",
           duration: 3000,
         });
@@ -233,7 +250,8 @@ Praktisch: ${formalCareForm.practical}`;
           instructions: '',
           socialFactors: '',
           followUp: '',
-          practical: ''
+          practical: '',
+          customMessage: ''
         });
       } else {
         setQuickMessage('');
@@ -500,82 +518,108 @@ Praktisch: ${formalCareForm.practical}`;
             {/* Conditional rendering based on contact type */}
             {contactType === 'formal-care' ? (
               <div className="space-y-4">
+                {/* Custom message field for formal care */}
+                <div>
+                  <Label htmlFor="customMessage" className="text-sm font-medium">Eigen bericht (optioneel)</Label>
+                  <Textarea
+                    id="customMessage"
+                    placeholder="Voeg hier een persoonlijk bericht toe..."
+                    value={formalCareForm.customMessage}
+                    onChange={(e) => handleFormalCareFormChange('customMessage', e.target.value)}
+                    className="mt-1 min-h-[60px]"
+                  />
+                </div>
+
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="client" className="text-sm font-medium">Cliënt</Label>
                     <Input
                       id="client"
-                      placeholder="Mevr. J. de Vries, 78 jaar, adres: Hoofdstraat 12, 1234 AB Amsterdam, sleutelkluisje code 5678"
                       value={formalCareForm.client}
                       onChange={(e) => handleFormalCareFormChange('client', e.target.value)}
                       className="mt-1"
                     />
+                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                      Voorbeeld: Mevr. J. de Vries, 78 jaar, adres: Hoofdstraat 12, 1234 AB Amsterdam, sleutelkluisje code 5678
+                    </div>
                   </div>
                   
                   <div>
                     <Label htmlFor="reason" className="text-sm font-medium">Reden</Label>
                     <Textarea
                       id="reason"
-                      placeholder="Pijnlijke zwelling linkerbeen, mogelijk trombose. Urgentie: U3 (binnen 4 uur beoordelen)"
                       value={formalCareForm.reason}
                       onChange={(e) => handleFormalCareFormChange('reason', e.target.value)}
                       className="mt-1 min-h-[60px]"
                     />
+                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                      Voorbeeld: Pijnlijke zwelling linkerbeen, mogelijk trombose. Urgentie: U3 (binnen 4 uur beoordelen)
+                    </div>
                   </div>
                   
                   <div>
                     <Label htmlFor="medicalHistory" className="text-sm font-medium">Medische voorgeschiedenis</Label>
                     <Textarea
                       id="medicalHistory"
-                      placeholder="Diabetes type 2, gebruikt metformine 500 mg 2x daags, geen bekende allergieën"
                       value={formalCareForm.medicalHistory}
                       onChange={(e) => handleFormalCareFormChange('medicalHistory', e.target.value)}
                       className="mt-1 min-h-[60px]"
                     />
+                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                      Voorbeeld: Diabetes type 2, gebruikt metformine 500 mg 2x daags, geen bekende allergieën
+                    </div>
                   </div>
                   
                   <div>
                     <Label htmlFor="instructions" className="text-sm font-medium">Instructies</Label>
                     <Textarea
                       id="instructions"
-                      placeholder="Beoordeel zwelling, meet vitale functies (bloeddruk, pols), neem verbandmateriaal mee. Volg protocol tromboseverdacht"
                       value={formalCareForm.instructions}
                       onChange={(e) => handleFormalCareFormChange('instructions', e.target.value)}
                       className="mt-1 min-h-[60px]"
                     />
+                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                      Voorbeeld: Beoordeel zwelling, meet vitale functies (bloeddruk, pols), neem verbandmateriaal mee. Volg protocol tromboseverdacht
+                    </div>
                   </div>
                   
                   <div>
                     <Label htmlFor="socialFactors" className="text-sm font-medium">Sociale factoren</Label>
                     <Textarea
                       id="socialFactors"
-                      placeholder="Cliënt spreekt Nederlands, woont alleen, geen huisdieren. Dochter is mogelijk aanwezig"
                       value={formalCareForm.socialFactors}
                       onChange={(e) => handleFormalCareFormChange('socialFactors', e.target.value)}
                       className="mt-1 min-h-[60px]"
                     />
+                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                      Voorbeeld: Cliënt spreekt Nederlands, woont alleen, geen huisdieren. Dochter is mogelijk aanwezig
+                    </div>
                   </div>
                   
                   <div>
                     <Label htmlFor="followUp" className="text-sm font-medium">Follow-up</Label>
                     <Textarea
                       id="followUp"
-                      placeholder="Rapporteer bevindingen in ECD en bel triagist (06-12345678) bij afwijkingen"
                       value={formalCareForm.followUp}
                       onChange={(e) => handleFormalCareFormChange('followUp', e.target.value)}
                       className="mt-1 min-h-[60px]"
                     />
+                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                      Voorbeeld: Rapporteer bevindingen in ECD en bel triagist (06-12345678) bij afwijkingen
+                    </div>
                   </div>
                   
                   <div>
                     <Label htmlFor="practical" className="text-sm font-medium">Praktisch</Label>
                     <Textarea
                       id="practical"
-                      placeholder="Bezoek tussen 14:00-15:00, parkeren mogelijk voor de deur"
                       value={formalCareForm.practical}
                       onChange={(e) => handleFormalCareFormChange('practical', e.target.value)}
                       className="mt-1 min-h-[60px]"
                     />
+                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                      Voorbeeld: Bezoek tussen 14:00-15:00, parkeren mogelijk voor de deur
+                    </div>
                   </div>
                 </div>
                 
