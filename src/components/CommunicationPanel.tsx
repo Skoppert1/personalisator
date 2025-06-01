@@ -1,10 +1,11 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, X, Send, Sparkles, Loader2, Phone, User, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -32,6 +33,18 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   const [selectedInformalCare, setSelectedInformalCare] = useState<string[]>([]);
   const [selectedFormalCare, setSelectedFormalCare] = useState<string>('');
   const [formalCareOpen, setFormalCareOpen] = useState(false);
+  
+  // Formal care form fields
+  const [formalCareForm, setFormalCareForm] = useState({
+    client: '',
+    reason: '',
+    medicalHistory: '',
+    instructions: '',
+    socialFactors: '',
+    followUp: '',
+    practical: ''
+  });
+  
   const { toast } = useToast();
 
   const informalCareContacts = [
@@ -126,6 +139,15 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   };
   
   const getMessageContent = () => {
+    if (contactType === 'formal-care') {
+      return `Cliënt: ${formalCareForm.client}
+Reden: ${formalCareForm.reason}
+Medische voorgeschiedenis: ${formalCareForm.medicalHistory}
+Instructies: ${formalCareForm.instructions}
+Sociale factoren: ${formalCareForm.socialFactors}
+Follow-up: ${formalCareForm.followUp}
+Praktisch: ${formalCareForm.practical}`;
+    }
     return quickMessage;
   };
 
@@ -137,8 +159,27 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
     );
   };
 
+  const handleFormalCareFormChange = (field: string, value: string) => {
+    setFormalCareForm(prev => ({ ...prev, [field]: value }));
+  };
+
   const sendMessage = async () => {
-    if (!quickMessage.trim() || isSending) return;
+    const messageContent = getMessageContent();
+    if ((!messageContent.trim() && contactType !== 'formal-care') || isSending) return;
+
+    // Check if formal care form is filled
+    if (contactType === 'formal-care') {
+      const requiredFields = Object.values(formalCareForm);
+      if (requiredFields.some(field => !field.trim())) {
+        toast({
+          title: "Formulier incompleet",
+          description: "Vul alle velden in voor formele zorg berichten.",
+          variant: "destructive",
+          duration: 3000,
+        });
+        return;
+      }
+    }
 
     let recipients = '';
     if (contactType === 'client') {
@@ -164,7 +205,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
     const messageData = {
       style: communicationStyle,
       channel: communicationChannel,
-      content: getMessageContent(),
+      content: messageContent,
       clientName: getContactName(selectedContact || ''),
       contactType: contactType,
       recipients: recipients,
@@ -184,7 +225,20 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
         throw new Error('Failed to send message');
       }
 
-      setQuickMessage('');
+      if (contactType === 'formal-care') {
+        setFormalCareForm({
+          client: '',
+          reason: '',
+          medicalHistory: '',
+          instructions: '',
+          socialFactors: '',
+          followUp: '',
+          practical: ''
+        });
+      } else {
+        setQuickMessage('');
+      }
+      
       toast({
         title: "Bericht verstuurd",
         description: `Je bericht is succesvol verstuurd naar ${getContactTypeDisplayName(contactType)}.`,
@@ -335,7 +389,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
           </div>
         )}
         
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
           <Tabs defaultValue="client" value={contactType} onValueChange={(value) => setContactType(value as 'client' | 'informal-care' | 'formal-care')}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="client">Cliënt</TabsTrigger>
@@ -443,41 +497,143 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
               )}
             </p>
             
-            {/* Message input with clean design and loading state */}
-            <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-4">
-              <div className="flex items-end space-x-3">
-                <Input 
-                  placeholder="Typ je bericht..."
-                  value={quickMessage}
-                  onChange={(e) => setQuickMessage(e.target.value)}
-                  onKeyPress={handleInputKeyPress}
-                  className="border-0 bg-transparent focus:ring-0 focus:ring-offset-0 text-sm"
-                  disabled={isSending}
-                />
+            {/* Conditional rendering based on contact type */}
+            {contactType === 'formal-care' ? (
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="client" className="text-sm font-medium">Cliënt</Label>
+                    <Input
+                      id="client"
+                      placeholder="Mevr. J. de Vries, 78 jaar, adres: Hoofdstraat 12, 1234 AB Amsterdam, sleutelkluisje code 5678"
+                      value={formalCareForm.client}
+                      onChange={(e) => handleFormalCareFormChange('client', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="reason" className="text-sm font-medium">Reden</Label>
+                    <Textarea
+                      id="reason"
+                      placeholder="Pijnlijke zwelling linkerbeen, mogelijk trombose. Urgentie: U3 (binnen 4 uur beoordelen)"
+                      value={formalCareForm.reason}
+                      onChange={(e) => handleFormalCareFormChange('reason', e.target.value)}
+                      className="mt-1 min-h-[60px]"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="medicalHistory" className="text-sm font-medium">Medische voorgeschiedenis</Label>
+                    <Textarea
+                      id="medicalHistory"
+                      placeholder="Diabetes type 2, gebruikt metformine 500 mg 2x daags, geen bekende allergieën"
+                      value={formalCareForm.medicalHistory}
+                      onChange={(e) => handleFormalCareFormChange('medicalHistory', e.target.value)}
+                      className="mt-1 min-h-[60px]"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="instructions" className="text-sm font-medium">Instructies</Label>
+                    <Textarea
+                      id="instructions"
+                      placeholder="Beoordeel zwelling, meet vitale functies (bloeddruk, pols), neem verbandmateriaal mee. Volg protocol tromboseverdacht"
+                      value={formalCareForm.instructions}
+                      onChange={(e) => handleFormalCareFormChange('instructions', e.target.value)}
+                      className="mt-1 min-h-[60px]"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="socialFactors" className="text-sm font-medium">Sociale factoren</Label>
+                    <Textarea
+                      id="socialFactors"
+                      placeholder="Cliënt spreekt Nederlands, woont alleen, geen huisdieren. Dochter is mogelijk aanwezig"
+                      value={formalCareForm.socialFactors}
+                      onChange={(e) => handleFormalCareFormChange('socialFactors', e.target.value)}
+                      className="mt-1 min-h-[60px]"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="followUp" className="text-sm font-medium">Follow-up</Label>
+                    <Textarea
+                      id="followUp"
+                      placeholder="Rapporteer bevindingen in ECD en bel triagist (06-12345678) bij afwijkingen"
+                      value={formalCareForm.followUp}
+                      onChange={(e) => handleFormalCareFormChange('followUp', e.target.value)}
+                      className="mt-1 min-h-[60px]"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="practical" className="text-sm font-medium">Praktisch</Label>
+                    <Textarea
+                      id="practical"
+                      placeholder="Bezoek tussen 14:00-15:00, parkeren mogelijk voor de deur"
+                      value={formalCareForm.practical}
+                      onChange={(e) => handleFormalCareFormChange('practical', e.target.value)}
+                      className="mt-1 min-h-[60px]"
+                    />
+                  </div>
+                </div>
+                
                 <Button 
-                  size="sm" 
-                  className="bg-syntilio-purple hover:bg-syntilio-purple/90 text-white rounded-xl px-4 h-9 min-w-[80px]"
+                  className="w-full bg-syntilio-purple hover:bg-syntilio-purple/90 text-white rounded-xl py-3 font-medium transition-all duration-300 min-h-[48px]"
                   onClick={sendMessage}
-                  disabled={!quickMessage.trim() || isSending}
+                  disabled={isSending}
                 >
                   {isSending ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Bezig...
                     </>
                   ) : (
                     <>
-                      <Send className="h-4 w-4 mr-1" />
-                      Send
+                      <Send className="h-4 w-4 mr-2" />
+                      Verstuur naar formele zorg
                     </>
                   )}
                 </Button>
               </div>
-              <div className="mt-2 text-xs text-gray-400">
-                Via {getChannelDisplayName(communicationChannel)}
-                {isSending && <span className="ml-2 text-syntilio-purple">• Wordt verstuurd...</span>}
+            ) : (
+              /* Message input with clean design and loading state for client and informal care */
+              <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-4">
+                <div className="flex items-end space-x-3">
+                  <Input 
+                    placeholder="Typ je bericht..."
+                    value={quickMessage}
+                    onChange={(e) => setQuickMessage(e.target.value)}
+                    onKeyPress={handleInputKeyPress}
+                    className="border-0 bg-transparent focus:ring-0 focus:ring-offset-0 text-sm"
+                    disabled={isSending}
+                  />
+                  <Button 
+                    size="sm" 
+                    className="bg-syntilio-purple hover:bg-syntilio-purple/90 text-white rounded-xl px-4 h-9 min-w-[80px]"
+                    onClick={sendMessage}
+                    disabled={!quickMessage.trim() || isSending}
+                  >
+                    {isSending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        Bezig...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-1" />
+                        Send
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <div className="mt-2 text-xs text-gray-400">
+                  Via {getChannelDisplayName(communicationChannel)}
+                  {isSending && <span className="ml-2 text-syntilio-purple">• Wordt verstuurd...</span>}
+                </div>
               </div>
-            </div>
+            )}
           </div>
           
           {/* Feedback section */}
