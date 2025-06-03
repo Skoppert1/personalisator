@@ -70,10 +70,10 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   ];
 
   const formalCareContacts = [
-    { id: 'formal1', name: 'Contact 1 - Huisarts' },
-    { id: 'formal2', name: 'Contact 2 - Fysiotherapeut' },
-    { id: 'formal3', name: 'Contact 3 - Wijkverpleegkundige' },
-    { id: 'formal4', name: 'Contact 4 - Specialist' },
+    { id: 'formal1', name: 'Dr. Maria van der Berg' },
+    { id: 'formal2', name: 'Kees Jansen' },
+    { id: 'formal3', name: 'Linda Bakker' },
+    { id: 'formal4', name: 'Dr. Ahmed Hassan' },
   ];
   
   const getContactName = (contactId: string) => {
