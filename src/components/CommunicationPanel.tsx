@@ -11,6 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface CommunicationPanelProps {
   selectedContact?: string;
@@ -33,6 +42,9 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   const [selectedInformalCare, setSelectedInformalCare] = useState<string[]>([]);
   const [selectedFormalCare, setSelectedFormalCare] = useState<string>('');
   const [formalCareOpen, setFormalCareOpen] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [pendingMessages, setPendingMessages] = useState<number>(0);
+  const [showAllSentDialog, setShowAllSentDialog] = useState(false);
   
   // Formal care form fields
   const [formalCareForm, setFormalCareForm] = useState({
@@ -291,6 +303,7 @@ Praktisch: ${formalCareForm.practical}`;
     }
 
     setIsSending(true);
+    setPendingMessages(prev => prev + 1);
 
     const messageData = {
       style: communicationStyle,
@@ -330,13 +343,23 @@ Praktisch: ${formalCareForm.practical}`;
         setQuickMessage('');
       }
       
-      toast({
-        title: "Bericht verstuurd",
-        description: `Je bericht is succesvol verstuurd naar ${getContactTypeDisplayName(contactType)}.`,
-        duration: 3000,
-      });
+      // Show confirmation dialog
+      setShowConfirmation(true);
+      
+      // Simulate message processing completion after 3 seconds
+      setTimeout(() => {
+        setPendingMessages(prev => {
+          const newCount = prev - 1;
+          if (newCount === 0) {
+            setShowAllSentDialog(true);
+          }
+          return newCount;
+        });
+      }, 3000);
+      
     } catch (error) {
       console.error('Error sending message:', error);
+      setPendingMessages(prev => prev - 1);
       toast({
         title: "Fout bij versturen",
         description: "Er is iets misgegaan bij het versturen van je bericht. Probeer het opnieuw.",
@@ -789,6 +812,41 @@ Praktisch: ${formalCareForm.practical}`;
           </div>
         </div>
       </div>
+      
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bericht verstuurd</AlertDialogTitle>
+            <AlertDialogDescription>
+              Je bericht is succesvol verstuurd! Je kunt nu verder gaan met je rapportage. 
+              Het systeem zal je laten weten wanneer alle berichten volledig zijn verwerkt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowConfirmation(false)}>
+              Verder gaan met rapportage
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* All Messages Sent Dialog */}
+      <AlertDialog open={showAllSentDialog} onOpenChange={setShowAllSentDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Alle berichten verstuurd</AlertDialogTitle>
+            <AlertDialogDescription>
+              Alle berichten zijn succesvol verstuurd en verwerkt. Je kunt nu verder gaan met je werkzaamheden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowAllSentDialog(false)}>
+              Begrepen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
