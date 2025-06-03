@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, X, Send, Sparkles, Loader2, Phone, User, Search } from 'lucide-react';
+import { MessageCircle, X, Send, Sparkles, Loader2, Phone, User, Search, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -73,6 +73,65 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
       default:
         return '';
     }
+  };
+
+  const getExampleDataForContact = (contactId: string) => {
+    switch (contactId) {
+      case 'contact1':
+        return {
+          client: 'Dhr. Jan de Jong, 65 jaar, adres: Kerkstraat 45, 2345 CD Utrecht, sleutelkluisje code 1234',
+          reason: 'Acute pijn op de borst, mogelijk hartklachten. Urgentie: U2 (binnen 1 uur beoordelen)',
+          medicalHistory: 'Hypertensie, gebruikt lisinopril 10 mg 1x daags, rookverleden 20 jaar geleden gestopt',
+          instructions: 'ECG maken, vitale functies controleren (bloeddruk, hartslag, saturatie), neem EHBO-tas mee. Volg protocol acute thoracale pijn',
+          socialFactors: 'Cliënt spreekt Nederlands en Engels, woont met echtgenote, geen huisdieren. Echtgenote is thuis aanwezig',
+          followUp: 'Rapporteer bevindingen direct in ECD en bel cardioloog (06-87654321) bij afwijkingen',
+          practical: 'Bezoek zo spoedig mogelijk, parkeren mogelijk achter het huis'
+        };
+      case 'contact2':
+        return {
+          client: 'Mevr. Anna de Vries, 78 jaar, adres: Hoofdstraat 12, 1234 AB Amsterdam, sleutelkluisje code 5678',
+          reason: 'Pijnlijke zwelling linkerbeen, mogelijk trombose. Urgentie: U3 (binnen 4 uur beoordelen)',
+          medicalHistory: 'Diabetes type 2, gebruikt metformine 500 mg 2x daags, geen bekende allergieën',
+          instructions: 'Beoordeel zwelling, meet vitale functies (bloeddruk, pols), neem verbandmateriaal mee. Volg protocol tromboseverdacht',
+          socialFactors: 'Cliënt spreekt Nederlands, woont alleen, geen huisdieren. Dochter is mogelijk aanwezig',
+          followUp: 'Rapporteer bevindingen in ECD en bel triagist (06-12345678) bij afwijkingen',
+          practical: 'Bezoek tussen 14:00-15:00, parkeren mogelijk voor de deur'
+        };
+      case 'contact3':
+        return {
+          client: 'Dhr. Berend van Dijk, 82 jaar, adres: Dorpsstraat 28, 5678 EF Eindhoven, sleutelkluisje code 9876',
+          reason: 'Verwardheid en vallen, mogelijk medicatie-interactie. Urgentie: U3 (binnen 4 uur beoordelen)',
+          medicalHistory: 'Dementie, hartfalen, gebruikt digoxine 0,25 mg 1x daags en furosemide 40 mg 1x daags',
+          instructions: 'Cognitieve beoordeling, medicatie-review, val-risico inschatten. Neem bloeddrukmeter en glucosemeter mee',
+          socialFactors: 'Cliënt spreekt dialect, woont alleen, heeft kat. Zoon woont in de buurt en heeft sleutel',
+          followUp: 'Overleg met geriater (06-98765432) en rapporteer in ECD. Mogelijk medicatie-aanpassing nodig',
+          practical: 'Bezoek tussen 10:00-12:00, bel aan bij buren (nummer 26) als geen gehoor'
+        };
+      default:
+        return {
+          client: '',
+          reason: '',
+          medicalHistory: '',
+          instructions: '',
+          socialFactors: '',
+          followUp: '',
+          practical: ''
+        };
+    }
+  };
+
+  const fillExampleData = () => {
+    const exampleData = getExampleDataForContact(selectedContact || '');
+    setFormalCareForm(prev => ({
+      ...prev,
+      ...exampleData
+    }));
+    
+    toast({
+      title: "Voorbeelddata ingevuld",
+      description: "Alle velden zijn automatisch ingevuld met voorbeelddata.",
+      duration: 3000,
+    });
   };
 
   const getStyleDisplayName = (style: string) => {
@@ -518,6 +577,21 @@ Praktisch: ${formalCareForm.practical}`;
             {/* Conditional rendering based on contact type */}
             {contactType === 'formal-care' ? (
               <div className="space-y-4">
+                {/* Fill example data button */}
+                {selectedContact && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={fillExampleData}
+                      className="text-xs"
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      Invullen
+                    </Button>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="client" className="text-sm font-medium">Cliënt</Label>
