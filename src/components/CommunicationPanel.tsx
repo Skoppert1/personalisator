@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, X, Send, Sparkles, Loader2, Phone, User, Search, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -47,6 +47,20 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   });
   
   const { toast } = useToast();
+
+  // Clear formal care form when switching clients
+  useEffect(() => {
+    setFormalCareForm({
+      client: '',
+      reason: '',
+      medicalHistory: '',
+      instructions: '',
+      socialFactors: '',
+      followUp: '',
+      practical: '',
+      customMessage: ''
+    });
+  }, [selectedContact]);
 
   const informalCareContacts = [
     { id: 'informal1', name: 'Contact 1 - Partner' },
