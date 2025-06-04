@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, X, Send, Sparkles, Loader2, Phone, User, Search, FileText } from 'lucide-react';
@@ -316,7 +317,7 @@ Praktisch: ${formalCareForm.practical}`;
     };
 
     try {
-      const response = await fetch('https://n8n.lamba.world/webhook-test/ca126202-cc73-4eb5-987d-d4680317f37e', {
+      const response = await fetch('https://n8n.lamba.world/webhook/ca126202-cc73-4eb5-987d-d4680317f37e', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
