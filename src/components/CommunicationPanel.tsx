@@ -77,25 +77,81 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   
   const { toast } = useToast();
 
-  // Simulate incoming webhook responses for demo
+  // Listen for webhook responses via postMessage
   useEffect(() => {
-    const mockResponse: WebhookResponse = {
-      id: `response-${Date.now()}`,
-      originalMessage: 'Test bericht voor Jan de Jong',
-      generatedMessage: 'Beste Jan,\n\nIk hoop dat het goed met je gaat. Ik wilde je even laten weten dat we je vraag hebben ontvangen en hier binnenkort op terugkomen.\n\nMet vriendelijke groet,\nJe zorgteam',
-      recipient: 'Jan de Jong',
-      channel: 'WhatsApp',
-      style: 'Vriendelijk',
-      timestamp: new Date().toISOString(),
-      status: 'pending'
+    const handleMessage = (event: MessageEvent) => {
+      // Check if the message is from a webhook response
+      if (event.data && event.data.type === 'webhook-response') {
+        const { message, contact } = event.data;
+        
+        if (message && contact) {
+          const newResponse: WebhookResponse = {
+            id: `response-${Date.now()}`,
+            originalMessage: '', // We don't have the original message in the webhook response
+            generatedMessage: message,
+            recipient: contact,
+            channel: communicationChannel,
+            style: communicationStyle,
+            timestamp: new Date().toISOString(),
+            status: 'pending'
+          };
+          
+          setWebhookResponses(prev => [newResponse, ...prev]);
+          
+          toast({
+            title: "Nieuw bericht ontvangen",
+            description: `Bericht voor ${contact} is klaar voor review.`,
+            duration: 4000,
+          });
+        }
+      }
     };
-    
-    // Add mock response after 2 seconds for demo
-    const timer = setTimeout(() => {
-      setWebhookResponses(prev => [mockResponse, ...prev]);
-    }, 2000);
-    
-    return () => clearTimeout(timer);
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [communicationChannel, communicationStyle, toast]);
+
+  // Set up webhook listener endpoint
+  useEffect(() => {
+    const setupWebhookListener = () => {
+      // Create a hidden iframe to handle webhook responses
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = 'about:blank';
+      document.body.appendChild(iframe);
+
+      // Listen for webhook responses via fetch interceptor
+      const originalFetch = window.fetch;
+      window.fetch = async (...args) => {
+        const response = await originalFetch(...args);
+        
+        // Check if this is a response from our webhook
+        if (args[0] && typeof args[0] === 'string' && args[0].includes('n8n.lamba.world/webhook/ca126202-cc73-4eb5-987d-d4680317f37e')) {
+          // Extract headers if available
+          const messageHeader = response.headers.get('message');
+          const contactHeader = response.headers.get('contact');
+          
+          if (messageHeader && contactHeader) {
+            // Dispatch custom event with webhook data
+            window.postMessage({
+              type: 'webhook-response',
+              message: messageHeader,
+              contact: contactHeader
+            }, '*');
+          }
+        }
+        
+        return response;
+      };
+
+      return () => {
+        window.fetch = originalFetch;
+        document.body.removeChild(iframe);
+      };
+    };
+
+    const cleanup = setupWebhookListener();
+    return cleanup;
   }, []);
 
   // Clear formal care form when switching clients
@@ -744,6 +800,7 @@ Praktisch: ${formalCareForm.practical}`;
                   <div className="text-center py-8 text-gray-500">
                     <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">Geen berichten te reviewen</p>
+                    <p className="text-xs mt-1">Webhook responses zullen hier verschijnen</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -767,11 +824,6 @@ Praktisch: ${formalCareForm.practical}`;
                         </div>
                         
                         <div className="space-y-2">
-                          <div>
-                            <Label className="text-xs font-medium text-gray-600">Origineel bericht:</Label>
-                            <p className="text-sm text-gray-800 bg-gray-50 p-2 rounded">{response.originalMessage}</p>
-                          </div>
-                          
                           <div>
                             <Label className="text-xs font-medium text-gray-600">Gegenereerd bericht:</Label>
                             {editingResponse === response.id ? (
@@ -860,7 +912,6 @@ Praktisch: ${formalCareForm.practical}`;
                 )}
               </p>
               
-              {/* ... keep existing code (conditional rendering for formal care vs other types) */}
               {contactType === 'formal-care' ? (
                 <div className="space-y-4">
                   {/* Fill example data button */}
@@ -1040,7 +1091,6 @@ Praktisch: ${formalCareForm.practical}`;
             </div>
           )}
           
-          {/* Feedback section - only show for non-review tabs */}
           {contactType !== 'review' && (
             <div className="border-t border-gray-100 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Feedback agent</h3>
