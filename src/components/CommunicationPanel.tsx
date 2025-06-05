@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, X, Send, Sparkles, Loader2, Phone, User, Search, FileText } from 'lucide-react';
+import { MessageCircle, X, Send, Sparkles, Loader2, Phone, User, Search, FileText, CheckCircle, Edit3, Clock, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -15,12 +14,24 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+interface WebhookResponse {
+  id: string;
+  originalMessage: string;
+  generatedMessage: string;
+  recipient: string;
+  channel: string;
+  style: string;
+  timestamp: string;
+  status: 'pending' | 'accepted' | 'sent';
+}
 
 interface CommunicationPanelProps {
   selectedContact?: string;
@@ -46,6 +57,11 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingMessages, setPendingMessages] = useState<number>(0);
   const [showAllSentDialog, setShowAllSentDialog] = useState(false);
+  const [webhookResponses, setWebhookResponses] = useState<WebhookResponse[]>([]);
+  const [editingResponse, setEditingResponse] = useState<string | null>(null);
+  const [editedMessage, setEditedMessage] = useState<string>('');
+  const [showAcceptDialog, setShowAcceptDialog] = useState<string | null>(null);
+  const [isSendingToFinal, setIsSendingToFinal] = useState<string | null>(null);
   
   // Formal care form fields
   const [formalCareForm, setFormalCareForm] = useState({
@@ -60,6 +76,27 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   });
   
   const { toast } = useToast();
+
+  // Simulate incoming webhook responses for demo
+  useEffect(() => {
+    const mockResponse: WebhookResponse = {
+      id: `response-${Date.now()}`,
+      originalMessage: 'Test bericht voor Jan de Jong',
+      generatedMessage: 'Beste Jan,\n\nIk hoop dat het goed met je gaat. Ik wilde je even laten weten dat we je vraag hebben ontvangen en hier binnenkort op terugkomen.\n\nMet vriendelijke groet,\nJe zorgteam',
+      recipient: 'Jan de Jong',
+      channel: 'WhatsApp',
+      style: 'Vriendelijk',
+      timestamp: new Date().toISOString(),
+      status: 'pending'
+    };
+    
+    // Add mock response after 2 seconds for demo
+    const timer = setTimeout(() => {
+      setWebhookResponses(prev => [mockResponse, ...prev]);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Clear formal care form when switching clients
   useEffect(() => {
@@ -83,10 +120,10 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   ];
 
   const formalCareContacts = [
-    { id: 'formal1', name: 'Dr. Maria van der Berg' },
+    { id: 'formal1', name: 'Maria van der Berg' },
     { id: 'formal2', name: 'Kees Jansen' },
     { id: 'formal3', name: 'Linda Bakker' },
-    { id: 'formal4', name: 'Dr. Ahmed Hassan' },
+    { id: 'formal4', name: 'Ahmed Hassan' },
   ];
   
   const getContactName = (contactId: string) => {
@@ -253,6 +290,96 @@ Praktisch: ${formalCareForm.practical}`;
 
   const handleFormalCareFormChange = (field: string, value: string) => {
     setFormalCareForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const startEditing = (response: WebhookResponse) => {
+    setEditingResponse(response.id);
+    setEditedMessage(response.generatedMessage);
+  };
+
+  const cancelEditing = () => {
+    setEditingResponse(null);
+    setEditedMessage('');
+  };
+
+  const saveEdit = (responseId: string) => {
+    setWebhookResponses(prev => 
+      prev.map(response => 
+        response.id === responseId 
+          ? { ...response, generatedMessage: editedMessage }
+          : response
+      )
+    );
+    setEditingResponse(null);
+    setEditedMessage('');
+    
+    toast({
+      title: "Bericht bewerkt",
+      description: "Het bericht is succesvol aangepast.",
+      duration: 3000,
+    });
+  };
+
+  const acceptMessage = (responseId: string) => {
+    setShowAcceptDialog(responseId);
+  };
+
+  const confirmAccept = async () => {
+    if (!showAcceptDialog) return;
+    
+    const response = webhookResponses.find(r => r.id === showAcceptDialog);
+    if (!response) return;
+
+    setIsSendingToFinal(showAcceptDialog);
+    
+    try {
+      const finalResponse = await fetch('https://n8n.lamba.world/webhook-test/08ce8a0f-9e5c-4df9-a1f8-173cf6db4803', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originalMessage: response.originalMessage,
+          finalMessage: response.generatedMessage,
+          recipient: response.recipient,
+          channel: response.channel,
+          style: response.style,
+          timestamp: new Date().toISOString(),
+          approvedBy: 'triagist'
+        }),
+      });
+
+      if (!finalResponse.ok) {
+        throw new Error('Failed to send final message');
+      }
+
+      // Update status to sent
+      setWebhookResponses(prev => 
+        prev.map(r => 
+          r.id === showAcceptDialog 
+            ? { ...r, status: 'sent' }
+            : r
+        )
+      );
+
+      toast({
+        title: "Bericht verstuurd",
+        description: "Het goedgekeurde bericht is succesvol verstuurd.",
+        duration: 3000,
+      });
+      
+    } catch (error) {
+      console.error('Error sending final message:', error);
+      toast({
+        title: "Fout bij versturen",
+        description: "Er is iets misgegaan bij het versturen van het goedgekeurde bericht.",
+        variant: "destructive",
+        duration: 4000,
+      });
+    } finally {
+      setIsSendingToFinal(null);
+      setShowAcceptDialog(null);
+    }
   };
 
   const sendMessage = async () => {
@@ -424,6 +551,8 @@ Praktisch: ${formalCareForm.practical}`;
       sendMessage();
     }
   };
+
+  const pendingResponsesCount = webhookResponses.filter(r => r.status === 'pending').length;
   
   return (
     <>
@@ -440,11 +569,13 @@ Praktisch: ${formalCareForm.practical}`;
             className="relative bg-white/90 backdrop-blur-sm border border-gray-200/50 hover:bg-white hover:shadow-lg text-syntilio-purple rounded-full p-4 shadow-md transition-all duration-300 hover:scale-105 group h-14 w-14"
           >
             <MessageCircle className="h-6 w-6" />
-            <span className="absolute -top-1 -right-1">
-              <Badge variant="destructive" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                !
-              </Badge>
-            </span>
+            {pendingResponsesCount > 0 && (
+              <span className="absolute -top-1 -right-1">
+                <Badge variant="destructive" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                  {pendingResponsesCount}
+                </Badge>
+              </span>
+            )}
           </Button>
           
           <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
@@ -506,10 +637,18 @@ Praktisch: ${formalCareForm.practical}`;
         
         <div className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
           <Tabs defaultValue="client" value={contactType} onValueChange={(value) => setContactType(value as 'client' | 'informal-care' | 'formal-care')}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="client">Cliënt</TabsTrigger>
               <TabsTrigger value="informal-care">Informele zorg</TabsTrigger>
               <TabsTrigger value="formal-care">Formele zorg</TabsTrigger>
+              <TabsTrigger value="review" className="relative">
+                Review
+                {pendingResponsesCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-2 -right-2 h-4 w-4 rounded-full p-0 flex items-center justify-center text-xs">
+                    {pendingResponsesCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="client" className="space-y-4">
@@ -595,222 +734,332 @@ Praktisch: ${formalCareForm.practical}`;
                 )}
               </div>
             </TabsContent>
-          </Tabs>
 
-          {/* Quick messaging section */}
-          <div>
-            <div className="flex items-center space-x-2 mb-3">
-              <Sparkles className="h-5 w-5 text-syntilio-purple" />
-              <h3 className="text-lg font-semibold text-gray-900">Snel Bericht</h3>
-            </div>
-            <p className="text-sm text-gray-500 mb-6">
-              Verstuur naar: {getContactTypeDisplayName(contactType)}
-              {getSelectedContactNames() && (
-                <span className="block font-medium text-gray-700 mt-1">
-                  {getSelectedContactNames()}
-                </span>
-              )}
-            </p>
-            
-            {/* Conditional rendering based on contact type */}
-            {contactType === 'formal-care' ? (
-              <div className="space-y-4">
-                {/* Fill example data button */}
-                {selectedContact && (
-                  <div className="flex justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={fillExampleData}
-                      className="text-xs"
-                    >
-                      <FileText className="h-3 w-3 mr-1" />
-                      Invullen
-                    </Button>
+            <TabsContent value="review" className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Te reviewen berichten</h3>
+                {webhookResponses.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Geen berichten te reviewen</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {webhookResponses.map((response) => (
+                      <div key={response.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Badge variant={response.status === 'pending' ? 'default' : response.status === 'sent' ? 'default' : 'secondary'}>
+                              {response.status === 'pending' ? 'Te reviewen' : response.status === 'sent' ? 'Verstuurd' : 'Geaccepteerd'}
+                            </Badge>
+                            <span className="text-xs text-gray-500">
+                              {new Date(response.timestamp).toLocaleTimeString('nl-NL', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {response.recipient} • {response.channel}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div>
+                            <Label className="text-xs font-medium text-gray-600">Origineel bericht:</Label>
+                            <p className="text-sm text-gray-800 bg-gray-50 p-2 rounded">{response.originalMessage}</p>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs font-medium text-gray-600">Gegenereerd bericht:</Label>
+                            {editingResponse === response.id ? (
+                              <div className="space-y-2">
+                                <Textarea
+                                  value={editedMessage}
+                                  onChange={(e) => setEditedMessage(e.target.value)}
+                                  className="min-h-[120px]"
+                                />
+                                <div className="flex space-x-2">
+                                  <Button size="sm" onClick={() => saveEdit(response.id)}>
+                                    Opslaan
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={cancelEditing}>
+                                    Annuleren
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-800 bg-blue-50 p-3 rounded whitespace-pre-wrap">
+                                {response.generatedMessage}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {response.status === 'pending' && editingResponse !== response.id && (
+                          <div className="flex space-x-2 pt-2">
+                            <Button 
+                              size="sm" 
+                              onClick={() => startEditing(response)}
+                              variant="outline"
+                              className="flex-1"
+                            >
+                              <Edit3 className="h-3 w-3 mr-1" />
+                              Bewerken
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              onClick={() => acceptMessage(response.id)}
+                              className="flex-1 bg-green-600 hover:bg-green-700"
+                              disabled={isSendingToFinal === response.id}
+                            >
+                              {isSendingToFinal === response.id ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  Versturen...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Accepteren & Versturen
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {response.status === 'sent' && (
+                          <div className="flex items-center space-x-2 pt-2 text-green-600">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="text-sm font-medium">Bericht is verstuurd</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
-
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="client" className="text-sm font-medium">Cliënt</Label>
-                    <Input
-                      id="client"
-                      value={formalCareForm.client}
-                      onChange={(e) => handleFormalCareFormChange('client', e.target.value)}
-                      className="mt-1"
-                    />
-                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                      Voorbeeld: Mevr. J. de Vries, 78 jaar, adres: Hoofdstraat 12, 1234 AB Amsterdam, sleutelkluisje code 5678
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="reason" className="text-sm font-medium">Reden</Label>
-                    <Textarea
-                      id="reason"
-                      value={formalCareForm.reason}
-                      onChange={(e) => handleFormalCareFormChange('reason', e.target.value)}
-                      className="mt-1 min-h-[60px]"
-                    />
-                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                      Voorbeeld: Pijnlijke zwelling linkerbeen, mogelijk trombose. Urgentie: U3 (binnen 4 uur beoordelen)
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="medicalHistory" className="text-sm font-medium">Medische voorgeschiedenis</Label>
-                    <Textarea
-                      id="medicalHistory"
-                      value={formalCareForm.medicalHistory}
-                      onChange={(e) => handleFormalCareFormChange('medicalHistory', e.target.value)}
-                      className="mt-1 min-h-[60px]"
-                    />
-                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                      Voorbeeld: Diabetes type 2, gebruikt metformine 500 mg 2x daags, geen bekende allergieën
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="instructions" className="text-sm font-medium">Instructies</Label>
-                    <Textarea
-                      id="instructions"
-                      value={formalCareForm.instructions}
-                      onChange={(e) => handleFormalCareFormChange('instructions', e.target.value)}
-                      className="mt-1 min-h-[60px]"
-                    />
-                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                      Voorbeeld: Beoordeel zwelling, meet vitale functies (bloeddruk, pols), neem verbandmateriaal mee. Volg protocol tromboseverdacht
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="socialFactors" className="text-sm font-medium">Sociale factoren</Label>
-                    <Textarea
-                      id="socialFactors"
-                      value={formalCareForm.socialFactors}
-                      onChange={(e) => handleFormalCareFormChange('socialFactors', e.target.value)}
-                      className="mt-1 min-h-[60px]"
-                    />
-                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                      Voorbeeld: Cliënt spreekt Nederlands, woont alleen, geen huisdieren. Dochter is mogelijk aanwezig
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="followUp" className="text-sm font-medium">Follow-up</Label>
-                    <Textarea
-                      id="followUp"
-                      value={formalCareForm.followUp}
-                      onChange={(e) => handleFormalCareFormChange('followUp', e.target.value)}
-                      className="mt-1 min-h-[60px]"
-                    />
-                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                      Voorbeeld: Rapporteer bevindingen in ECD en bel triagist (06-12345678) bij afwijkingen
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="practical" className="text-sm font-medium">Praktisch</Label>
-                    <Textarea
-                      id="practical"
-                      value={formalCareForm.practical}
-                      onChange={(e) => handleFormalCareFormChange('practical', e.target.value)}
-                      className="mt-1 min-h-[60px]"
-                    />
-                    <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                      Voorbeeld: Bezoek tussen 14:00-15:00, parkeren mogelijk voor de deur
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="customMessage" className="text-sm font-medium">Eigen bericht (optioneel)</Label>
-                  <Textarea
-                    id="customMessage"
-                    placeholder="Voeg hier een persoonlijk bericht toe..."
-                    value={formalCareForm.customMessage}
-                    onChange={(e) => handleFormalCareFormChange('customMessage', e.target.value)}
-                    className="mt-1 min-h-[60px]"
-                  />
-                </div>
-                
-                <Button 
-                  className="w-full bg-syntilio-purple hover:bg-syntilio-purple/90 text-white rounded-xl py-3 font-medium transition-all duration-300 min-h-[48px]"
-                  onClick={sendMessage}
-                  disabled={isSending}
-                >
-                  {isSending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Bezig...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-2" />
-                      Verstuur naar formele zorg
-                    </>
-                  )}
-                </Button>
               </div>
-            ) : (
-              /* Message input with clean design and loading state for client and informal care */
-              <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-4">
-                <div className="flex items-end space-x-3">
-                  <Input 
-                    placeholder="Typ je bericht..."
-                    value={quickMessage}
-                    onChange={(e) => setQuickMessage(e.target.value)}
-                    onKeyPress={handleInputKeyPress}
-                    className="border-0 bg-transparent focus:ring-0 focus:ring-offset-0 text-sm"
-                    disabled={isSending}
-                  />
+            </TabsContent>
+          </Tabs>
+
+          {/* Quick messaging section - only show for non-review tabs */}
+          {contactType !== 'review' && (
+            <div>
+              <div className="flex items-center space-x-2 mb-3">
+                <Sparkles className="h-5 w-5 text-syntilio-purple" />
+                <h3 className="text-lg font-semibold text-gray-900">Snel Bericht</h3>
+              </div>
+              <p className="text-sm text-gray-500 mb-6">
+                Verstuur naar: {getContactTypeDisplayName(contactType)}
+                {getSelectedContactNames() && (
+                  <span className="block font-medium text-gray-700 mt-1">
+                    {getSelectedContactNames()}
+                  </span>
+                )}
+              </p>
+              
+              {/* ... keep existing code (conditional rendering for formal care vs other types) */}
+              {contactType === 'formal-care' ? (
+                <div className="space-y-4">
+                  {/* Fill example data button */}
+                  {selectedContact && (
+                    <div className="flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={fillExampleData}
+                        className="text-xs"
+                      >
+                        <FileText className="h-3 w-3 mr-1" />
+                        Invullen
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="client" className="text-sm font-medium">Cliënt</Label>
+                      <Input
+                        id="client"
+                        value={formalCareForm.client}
+                        onChange={(e) => handleFormalCareFormChange('client', e.target.value)}
+                        className="mt-1"
+                      />
+                      <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        Voorbeeld: Mevr. J. de Vries, 78 jaar, adres: Hoofdstraat 12, 1234 AB Amsterdam, sleutelkluisje code 5678
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="reason" className="text-sm font-medium">Reden</Label>
+                      <Textarea
+                        id="reason"
+                        value={formalCareForm.reason}
+                        onChange={(e) => handleFormalCareFormChange('reason', e.target.value)}
+                        className="mt-1 min-h-[60px]"
+                      />
+                      <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        Voorbeeld: Pijnlijke zwelling linkerbeen, mogelijk trombose. Urgentie: U3 (binnen 4 uur beoordelen)
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="medicalHistory" className="text-sm font-medium">Medische voorgeschiedenis</Label>
+                      <Textarea
+                        id="medicalHistory"
+                        value={formalCareForm.medicalHistory}
+                        onChange={(e) => handleFormalCareFormChange('medicalHistory', e.target.value)}
+                        className="mt-1 min-h-[60px]"
+                      />
+                      <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        Voorbeeld: Diabetes type 2, gebruikt metformine 500 mg 2x daags, geen bekende allergieën
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="instructions" className="text-sm font-medium">Instructies</Label>
+                      <Textarea
+                        id="instructions"
+                        value={formalCareForm.instructions}
+                        onChange={(e) => handleFormalCareFormChange('instructions', e.target.value)}
+                        className="mt-1 min-h-[60px]"
+                      />
+                      <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        Voorbeeld: Beoordeel zwelling, meet vitale functies (bloeddruk, pols), neem verbandmateriaal mee. Volg protocol tromboseverdacht
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="socialFactors" className="text-sm font-medium">Sociale factoren</Label>
+                      <Textarea
+                        id="socialFactors"
+                        value={formalCareForm.socialFactors}
+                        onChange={(e) => handleFormalCareFormChange('socialFactors', e.target.value)}
+                        className="mt-1 min-h-[60px]"
+                      />
+                      <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        Voorbeeld: Cliënt spreekt Nederlands, woont alleen, geen huisdieren. Dochter is mogelijk aanwezig
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="followUp" className="text-sm font-medium">Follow-up</Label>
+                      <Textarea
+                        id="followUp"
+                        value={formalCareForm.followUp}
+                        onChange={(e) => handleFormalCareFormChange('followUp', e.target.value)}
+                        className="mt-1 min-h-[60px]"
+                      />
+                      <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        Voorbeeld: Rapporteer bevindingen in ECD en bel triagist (06-12345678) bij afwijkingen
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="practical" className="text-sm font-medium">Praktisch</Label>
+                      <Textarea
+                        id="practical"
+                        value={formalCareForm.practical}
+                        onChange={(e) => handleFormalCareFormChange('practical', e.target.value)}
+                        className="mt-1 min-h-[60px]"
+                      />
+                      <div className="mt-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        Voorbeeld: Bezoek tussen 14:00-15:00, parkeren mogelijk voor de deur
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="customMessage" className="text-sm font-medium">Eigen bericht (optioneel)</Label>
+                    <Textarea
+                      id="customMessage"
+                      placeholder="Voeg hier een persoonlijk bericht toe..."
+                      value={formalCareForm.customMessage}
+                      onChange={(e) => handleFormalCareFormChange('customMessage', e.target.value)}
+                      className="mt-1 min-h-[60px]"
+                    />
+                  </div>
+                  
                   <Button 
-                    size="sm" 
-                    className="bg-syntilio-purple hover:bg-syntilio-purple/90 text-white rounded-xl px-4 h-9 min-w-[80px]"
+                    className="w-full bg-syntilio-purple hover:bg-syntilio-purple/90 text-white rounded-xl py-3 font-medium transition-all duration-300 min-h-[48px]"
                     onClick={sendMessage}
-                    disabled={!quickMessage.trim() || isSending}
+                    disabled={isSending}
                   >
                     {isSending ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Bezig...
                       </>
                     ) : (
                       <>
-                        <Send className="h-4 w-4 mr-1" />
-                        Send
+                        <Send className="h-4 w-4 mr-2" />
+                        Verstuur naar formele zorg
                       </>
                     )}
                   </Button>
                 </div>
-                <div className="mt-2 text-xs text-gray-400">
-                  Via {getChannelDisplayName(communicationChannel)}
-                  {isSending && <span className="ml-2 text-syntilio-purple">• Wordt verstuurd...</span>}
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Feedback section */}
-          <div className="border-t border-gray-100 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Feedback agent</h3>
-            <p className="text-sm text-gray-500 mb-4">Automatische feedback verzameling</p>
-            
-            <Button 
-              className="w-full bg-gradient-to-r from-syntilio-purple to-syntilio-pink hover:opacity-90 text-white rounded-xl py-3 font-medium transition-all duration-300 min-h-[48px]"
-              onClick={sendFeedbackRequest}
-              disabled={isSendingFeedback}
-            >
-              {isSendingFeedback ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Feedback wordt verstuurd...
-                </>
               ) : (
-                'Feedback verzoek versturen'
+                /* Message input with clean design and loading state for client and informal care */
+                <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-4">
+                  <div className="flex items-end space-x-3">
+                    <Input 
+                      placeholder="Typ je bericht..."
+                      value={quickMessage}
+                      onChange={(e) => setQuickMessage(e.target.value)}
+                      onKeyPress={handleInputKeyPress}
+                      className="border-0 bg-transparent focus:ring-0 focus:ring-offset-0 text-sm"
+                      disabled={isSending}
+                    />
+                    <Button 
+                      size="sm" 
+                      className="bg-syntilio-purple hover:bg-syntilio-purple/90 text-white rounded-xl px-4 h-9 min-w-[80px]"
+                      onClick={sendMessage}
+                      disabled={!quickMessage.trim() || isSending}
+                    >
+                      {isSending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          Bezig...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-1" />
+                          Send
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-400">
+                    Via {getChannelDisplayName(communicationChannel)}
+                    {isSending && <span className="ml-2 text-syntilio-purple">• Wordt verstuurd...</span>}
+                  </div>
+                </div>
               )}
-            </Button>
-          </div>
+            </div>
+          )}
+          
+          {/* Feedback section - only show for non-review tabs */}
+          {contactType !== 'review' && (
+            <div className="border-t border-gray-100 pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Feedback agent</h3>
+              <p className="text-sm text-gray-500 mb-4">Automatische feedback verzameling</p>
+              
+              <Button 
+                className="w-full bg-gradient-to-r from-syntilio-purple to-syntilio-pink hover:opacity-90 text-white rounded-xl py-3 font-medium transition-all duration-300 min-h-[48px]"
+                onClick={sendFeedbackRequest}
+                disabled={isSendingFeedback}
+              >
+                {isSendingFeedback ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Feedback wordt verstuurd...
+                  </>
+                ) : (
+                  'Feedback verzoek versturen'
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
       
@@ -844,6 +1093,29 @@ Praktisch: ${formalCareForm.practical}`;
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setShowAllSentDialog(false)}>
               Begrepen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Accept Message Dialog */}
+      <AlertDialog open={!!showAcceptDialog} onOpenChange={() => setShowAcceptDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bericht accepteren en versturen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je dit bericht wilt accepteren en versturen naar de eindbestemming? 
+              Het bericht wordt direct verzonden naar de ontvanger.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmAccept}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <ArrowRight className="h-4 w-4 mr-2" />
+              Accepteren & Versturen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
