@@ -63,7 +63,6 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   const [showAcceptDialog, setShowAcceptDialog] = useState<string | null>(null);
   const [isSendingToFinal, setIsSendingToFinal] = useState<string | null>(null);
   
-  // Formal care form fields
   const [formalCareForm, setFormalCareForm] = useState({
     client: '',
     reason: '',
@@ -77,67 +76,80 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   
   const { toast } = useToast();
 
-  // Listen for webhook responses via postMessage
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // Check if the message is from a webhook response
-      if (event.data && event.data.type === 'webhook-response') {
-        const { message, contact } = event.data;
-        
-        if (message && contact) {
-          const newResponse: WebhookResponse = {
-            id: `response-${Date.now()}`,
-            originalMessage: '', // We don't have the original message in the webhook response
-            generatedMessage: message,
-            recipient: contact,
-            channel: communicationChannel,
-            style: communicationStyle,
-            timestamp: new Date().toISOString(),
-            status: 'pending'
-          };
-          
-          setWebhookResponses(prev => [newResponse, ...prev]);
-          
-          toast({
-            title: "Nieuw bericht ontvangen",
-            description: `Bericht voor ${contact} is klaar voor review.`,
-            duration: 4000,
-          });
-        }
+  const parseWebhookResponse = (responseText: string) => {
+    try {
+      const jsonData = JSON.parse(responseText);
+      if (jsonData.message && jsonData.contact) {
+        return {
+          message: jsonData.message,
+          contact: jsonData.contact
+        };
       }
-    };
+    } catch (e) {
+      console.log('Not JSON, parsing as text format');
+    }
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [communicationChannel, communicationStyle, toast]);
+    const messageMatch = responseText.match(/message:\s*(.+?)(?=\ncontact:|$)/s);
+    const contactMatch = responseText.match(/contact:\s*(.+?)(?=\nmessage:|$)/s);
 
-  // Set up webhook listener endpoint
+    if (messageMatch && contactMatch) {
+      return {
+        message: messageMatch[1].trim(),
+        contact: contactMatch[1].trim()
+      };
+    }
+
+    const altMessageMatch = responseText.match(/bericht:\s*(.+?)(?=\ncontact:|$)/s);
+    const altContactMatch = responseText.match(/ontvanger:\s*(.+?)(?=\nbericht:|$)/s);
+
+    if (altMessageMatch && altContactMatch) {
+      return {
+        message: altMessageMatch[1].trim(),
+        contact: altContactMatch[1].trim()
+      };
+    }
+
+    console.log('Could not parse webhook response:', responseText);
+    return null;
+  };
+
   useEffect(() => {
-    const setupWebhookListener = () => {
-      // Create a hidden iframe to handle webhook responses
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = 'about:blank';
-      document.body.appendChild(iframe);
-
-      // Listen for webhook responses via fetch interceptor
+    const handleWebhookResponse = async () => {
       const originalFetch = window.fetch;
       window.fetch = async (...args) => {
         const response = await originalFetch(...args);
         
-        // Check if this is a response from our webhook
         if (args[0] && typeof args[0] === 'string' && args[0].includes('n8n.lamba.world/webhook/ca126202-cc73-4eb5-987d-d4680317f37e')) {
-          // Extract headers if available
-          const messageHeader = response.headers.get('message');
-          const contactHeader = response.headers.get('contact');
+          const responseClone = response.clone();
           
-          if (messageHeader && contactHeader) {
-            // Dispatch custom event with webhook data
-            window.postMessage({
-              type: 'webhook-response',
-              message: messageHeader,
-              contact: contactHeader
-            }, '*');
+          try {
+            const responseText = await responseClone.text();
+            console.log('Webhook response received:', responseText);
+            
+            const parsedData = parseWebhookResponse(responseText);
+            
+            if (parsedData) {
+              const newResponse: WebhookResponse = {
+                id: `response-${Date.now()}`,
+                originalMessage: '',
+                generatedMessage: parsedData.message,
+                recipient: parsedData.contact,
+                channel: communicationChannel,
+                style: communicationStyle,
+                timestamp: new Date().toISOString(),
+                status: 'pending'
+              };
+              
+              setWebhookResponses(prev => [newResponse, ...prev]);
+              
+              toast({
+                title: "Nieuw bericht ontvangen",
+                description: `Bericht voor ${parsedData.contact} is klaar voor review.`,
+                duration: 4000,
+              });
+            }
+          } catch (error) {
+            console.error('Error parsing webhook response:', error);
           }
         }
         
@@ -146,15 +158,13 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
 
       return () => {
         window.fetch = originalFetch;
-        document.body.removeChild(iframe);
       };
     };
 
-    const cleanup = setupWebhookListener();
+    const cleanup = handleWebhookResponse();
     return cleanup;
-  }, []);
+  }, [communicationChannel, communicationStyle, toast]);
 
-  // Clear formal care form when switching clients
   useEffect(() => {
     setFormalCareForm({
       client: '',
@@ -411,7 +421,6 @@ Praktisch: ${formalCareForm.practical}`;
         throw new Error('Failed to send final message');
       }
 
-      // Update status to sent
       setWebhookResponses(prev => 
         prev.map(r => 
           r.id === showAcceptDialog 
@@ -444,7 +453,6 @@ Praktisch: ${formalCareForm.practical}`;
     const messageContent = getMessageContent();
     if ((!messageContent.trim() && contactType !== 'formal-care') || isSending) return;
 
-    // Check formal care form validation
     if (contactType === 'formal-care') {
       const hasCustomMessage = formalCareForm.customMessage.trim();
       const structuredFields = [
@@ -529,10 +537,8 @@ Praktisch: ${formalCareForm.practical}`;
         setQuickMessage('');
       }
       
-      // Show confirmation dialog
       setShowConfirmation(true);
       
-      // Simulate message processing completion after 3 seconds
       setTimeout(() => {
         setPendingMessages(prev => {
           const newCount = prev - 1;
@@ -614,7 +620,6 @@ Praktisch: ${formalCareForm.practical}`;
   
   return (
     <>
-      {/* Floating chat button */}
       <div 
         className={cn(
           "fixed bottom-8 right-8 z-50 transition-all duration-500 ease-in-out",
@@ -645,7 +650,6 @@ Praktisch: ${formalCareForm.practical}`;
         </div>
       </div>
 
-      {/* Communication panel */}
       <div className={cn(
         "fixed bottom-0 right-0 w-full md:w-[500px] bg-white/95 backdrop-blur-lg border-l border-t border-gray-200/50 shadow-2xl z-50 transition-all duration-500 ease-in-out transform rounded-tl-3xl overflow-hidden",
         isOpen ? "translate-y-0" : "translate-y-full"
@@ -667,7 +671,6 @@ Praktisch: ${formalCareForm.practical}`;
           </Button>
         </div>
 
-        {/* Client Communication Preference Display */}
         {(selectedContact || isInCall) && (
           <div className="bg-blue-50 border-b border-blue-100 p-4">
             <div className="flex items-center space-x-3">
@@ -896,7 +899,6 @@ Praktisch: ${formalCareForm.practical}`;
             </TabsContent>
           </Tabs>
 
-          {/* Quick messaging section - only show for non-review tabs */}
           {contactType !== 'review' && (
             <div>
               <div className="flex items-center space-x-2 mb-3">
@@ -914,7 +916,6 @@ Praktisch: ${formalCareForm.practical}`;
               
               {contactType === 'formal-care' ? (
                 <div className="space-y-4">
-                  {/* Fill example data button */}
                   {selectedContact && (
                     <div className="flex justify-end">
                       <Button
@@ -1052,7 +1053,6 @@ Praktisch: ${formalCareForm.practical}`;
                   </Button>
                 </div>
               ) : (
-                /* Message input with clean design and loading state for client and informal care */
                 <div className="bg-gray-50/50 border border-gray-200 rounded-2xl p-4">
                   <div className="flex items-end space-x-3">
                     <Input 
@@ -1115,7 +1115,6 @@ Praktisch: ${formalCareForm.practical}`;
         </div>
       </div>
       
-      {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1133,7 +1132,6 @@ Praktisch: ${formalCareForm.practical}`;
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* All Messages Sent Dialog */}
       <AlertDialog open={showAllSentDialog} onOpenChange={setShowAllSentDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1150,7 +1148,6 @@ Praktisch: ${formalCareForm.practical}`;
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Accept Message Dialog */}
       <AlertDialog open={!!showAcceptDialog} onOpenChange={() => setShowAcceptDialog(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
