@@ -114,7 +114,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   };
 
   useEffect(() => {
-    const handleWebhookResponse = async () => {
+    const handleWebhookResponse = () => {
       const originalFetch = window.fetch;
       window.fetch = async (...args) => {
         const response = await originalFetch(...args);
