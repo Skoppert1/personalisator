@@ -50,7 +50,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
   const [quickMessage, setQuickMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
-  const [contactType, setContactType] = useState<'client' | 'informal-care' | 'formal-care'>('client');
+  const [contactType, setContactType] = useState<'client' | 'informal-care' | 'formal-care' | 'review'>('client');
   const [selectedInformalCare, setSelectedInformalCare] = useState<string[]>([]);
   const [selectedFormalCare, setSelectedFormalCare] = useState<string>('');
   const [formalCareOpen, setFormalCareOpen] = useState(false);
@@ -236,7 +236,7 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
     }
   };
 
-  const getContactTypeDisplayName = (type: 'client' | 'informal-care' | 'formal-care') => {
+  const getContactTypeDisplayName = (type: 'client' | 'informal-care' | 'formal-care' | 'review') => {
     switch (type) {
       case 'client':
         return 'Cliënt';
@@ -244,6 +244,8 @@ const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
         return 'Informele zorg';
       case 'formal-care':
         return 'Formele zorg';
+      case 'review':
+        return 'Review';
       default:
         return type;
     }
@@ -636,7 +638,7 @@ Praktisch: ${formalCareForm.practical}`;
         )}
         
         <div className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
-          <Tabs defaultValue="client" value={contactType} onValueChange={(value) => setContactType(value as 'client' | 'informal-care' | 'formal-care')}>
+          <Tabs defaultValue="client" value={contactType} onValueChange={(value) => setContactType(value as 'client' | 'informal-care' | 'formal-care' | 'review')}>
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="client">Cliënt</TabsTrigger>
               <TabsTrigger value="informal-care">Informele zorg</TabsTrigger>
